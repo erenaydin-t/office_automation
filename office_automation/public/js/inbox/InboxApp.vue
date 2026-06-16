@@ -1,209 +1,291 @@
 <template>
-	<div class="oa-inbox">
-		<!-- Toolbar: tabs + search + filters -->
-		<div class="oa-toolbar">
-			<ul class="nav nav-tabs oa-tabs">
-				<li v-for="tab in tabs" :key="tab.key" class="nav-item">
-					<a
-						class="nav-link"
-						:class="{ active: activeTab === tab.key }"
-						href="#"
-						@click.prevent="setTab(tab.key)"
-					>
-						{{ tab.label }}
-						<span v-if="counts[tab.countKey]" class="badge oa-badge">
-							{{ counts[tab.countKey] }}
+	<div class="oa-cartable">
+		<!-- ---------------- Sidebar ---------------- -->
+		<aside class="oa-sidebar">
+			<button class="btn btn-primary btn-block oa-new-btn" @click="createLetter">
+				<span>＋ {{ __("ایجاد نامه جدید") }}</span>
+			</button>
+
+			<template v-for="node in folders" :key="node.key">
+				<div v-if="node.group" class="oa-group-title">{{ node.label }}</div>
+				<a
+					v-else
+					href="#"
+					class="oa-folder"
+					:class="{ active: activeFolder === node.key, child: node.child }"
+					@click.prevent="selectFolder(node)"
+				>
+					<span class="oa-folder-label">{{ node.label }}</span>
+					<span v-if="badge(node) != null" class="oa-count">{{ badge(node) }}</span>
+				</a>
+			</template>
+		</aside>
+
+		<!-- ---------------- Main panel ---------------- -->
+		<section class="oa-main">
+			<div class="oa-main-head">
+				<h4 class="oa-title">{{ activeLabel }}</h4>
+				<div class="oa-tools">
+					<input
+						ref="search"
+						v-model="search"
+						type="text"
+						class="form-control oa-search"
+						:placeholder="__('جستجو: موضوع، دستور، فرستنده…')"
+					/>
+					<select v-model="urgencyFilter" class="form-control oa-mini">
+						<option value="">{{ __("همه فوریت‌ها") }}</option>
+						<option value="Immediate">{{ __("آنی") }}</option>
+						<option value="Urgent">{{ __("فوری") }}</option>
+						<option value="Normal">{{ __("عادی") }}</option>
+					</select>
+					<button class="btn btn-default btn-sm" @click="refresh" :disabled="loading">
+						{{ loading ? __("…") : __("تازه‌سازی") }}
+					</button>
+				</div>
+			</div>
+
+			<div v-if="loading" class="oa-empty text-muted">{{ __("در حال بارگذاری…") }}</div>
+			<div v-else-if="!filteredItems.length" class="oa-empty text-muted">
+				{{ __("موردی یافت نشد.") }}
+			</div>
+
+			<div v-else class="oa-list">
+				<div
+					v-for="item in filteredItems"
+					:key="item.name"
+					class="oa-card"
+					:class="cardClass(item)"
+					@click="openItem(item)"
+				>
+					<div class="oa-card-head">
+						<span class="oa-subject">{{ item.title }}</span>
+						<span class="oa-badges">
+							<span v-if="item.urgency && item.urgency !== 'Normal'" class="pill urgent">
+								{{ faUrgency(item.urgency) }}
+							</span>
+							<span
+								v-if="item.confidentiality && item.confidentiality !== 'Normal'"
+								class="pill conf"
+							>
+								{{ faConf(item.confidentiality) }}
+							</span>
+							<span v-if="item.is_cc" class="pill cc">{{ __("رونوشت") }}</span>
+							<span class="pill" :class="statusColor(item)">{{ item.statusLabel }}</span>
 						</span>
-					</a>
-				</li>
-			</ul>
+					</div>
+					<div class="oa-meta text-muted">
+						<span v-if="item.kind === 'referral'">
+							<template v-if="scope === 'outbox'">→ {{ item.recipient }}</template>
+							<template v-else>{{ __("از") }} {{ item.sender }}</template>
+							<span v-if="item.referral_type"> · {{ faType(item.referral_type) }}</span>
+						</span>
+						<span v-else>{{ item.subtitle }}</span>
+						<span class="oa-time">{{ prettyTime(item.creation || item.modified) }}</span>
+					</div>
+					<div v-if="item.instruction" class="oa-instruction">{{ item.instruction }}</div>
 
-			<div class="oa-filters">
-				<input
-					v-model="search"
-					type="text"
-					class="form-control oa-search"
-					:placeholder="__('Semantic search: subject, instruction, sender…')"
-				/>
-				<select v-model="docTypeFilter" class="form-control oa-filter-select">
-					<option value="">{{ __("All document types") }}</option>
-					<option v-for="dt in availableDocTypes" :key="dt" :value="dt">
-						{{ dt }}
-					</option>
-				</select>
-				<button class="btn btn-default btn-sm" @click="refresh" :disabled="loading">
-					<span v-if="loading">{{ __("Loading…") }}</span>
-					<span v-else>{{ __("Refresh") }}</span>
-				</button>
-			</div>
-		</div>
-
-		<!-- List -->
-		<div class="oa-list" v-if="!loading">
-			<div v-if="!filteredItems.length" class="oa-empty text-muted">
-				{{ __("No items.") }}
-			</div>
-
-			<div
-				v-for="item in filteredItems"
-				:key="item.name"
-				class="oa-card"
-				:class="{ unseen: item.status === 'Unseen' }"
-				@click="openItem(item)"
-			>
-				<div class="oa-card-head">
-					<span class="oa-subject">{{ item.reference_title }}</span>
-					<span class="indicator-pill" :class="statusColor(item.status)">
-						{{ __(item.status) }}
-					</span>
-				</div>
-				<div class="oa-card-meta text-muted">
-					<span>{{ item.reference_doctype }} · {{ item.reference_name }}</span>
-					<span v-if="activeTab === 'sent'">→ {{ item.recipient }}</span>
-					<span v-else>{{ __("from") }} {{ item.sender }}</span>
-					<span v-if="item.action_type">· {{ item.action_type }}</span>
-					<span class="oa-time">{{ prettyTime(item.creation) }}</span>
-				</div>
-				<div v-if="item.instruction" class="oa-instruction">
-					{{ item.instruction }}
-				</div>
-
-				<div class="oa-card-actions" v-if="activeTab !== 'sent'">
-					<button class="btn btn-xs btn-primary" @click.stop="openReference(item)">
-						{{ __("Open") }}
-					</button>
-					<button class="btn btn-xs btn-default" @click.stop="forward(item)">
-						{{ __("Forward (Erja)") }}
-					</button>
-					<button class="btn btn-xs btn-success" @click.stop="markActioned(item)">
-						{{ __("Mark Actioned") }}
-					</button>
+					<div class="oa-actions" v-if="item.kind === 'referral' && scope === 'inbox'">
+						<button class="btn btn-xs btn-primary" @click.stop="openReference(item)">
+							{{ __("بازکردن") }}
+						</button>
+						<button class="btn btn-xs btn-default" @click.stop="forward(item)">
+							{{ __("ارجاع") }}
+						</button>
+						<template v-if="needsDecision(item)">
+							<button class="btn btn-xs btn-success" @click.stop="decide(item, 'approve')">
+								{{ __("تأیید") }}
+							</button>
+							<button class="btn btn-xs btn-danger" @click.stop="decide(item, 'reject')">
+								{{ __("رد") }}
+							</button>
+						</template>
+						<button v-else class="btn btn-xs btn-success" @click.stop="acknowledge(item)">
+							{{ __("اتمام") }}
+						</button>
+					</div>
+					<div class="oa-actions" v-else>
+						<button class="btn btn-xs btn-primary" @click.stop="openReference(item)">
+							{{ __("بازکردن") }}
+						</button>
+					</div>
 				</div>
 			</div>
-		</div>
-
-		<div v-else class="oa-loading text-muted">{{ __("Loading inbox…") }}</div>
+		</section>
 	</div>
 </template>
 
 <script>
 const __ = window.__ || ((s) => s);
+const API = "office_automation.office_automation.api.inbox.";
+const REF = "office_automation.office_automation.doctype.document_referral.document_referral.";
 
 export default {
 	name: "InboxApp",
-	props: {
-		page: { type: Object, default: null },
-	},
+	props: { page: { type: Object, default: null } },
 	data() {
 		return {
-			activeTab: "unread",
+			activeFolder: "inbox:all",
 			search: "",
-			docTypeFilter: "",
+			urgencyFilter: "",
 			loading: false,
 			items: [],
-			counts: { unread: 0, pending: 0, sent: 0 },
-			tabs: [
-				{ key: "unread", label: __("Unread"), countKey: "unread" },
-				{ key: "pending", label: __("Pending Actions"), countKey: "pending" },
-				{ key: "sent", label: __("Sent Referrals"), countKey: "sent" },
+			counts: { inbox: {}, outbox: {}, drafts: 0 },
+			folders: [
+				{ group: true, label: __("کارتابل دریافتی (Inbox)") },
+				{ key: "inbox:all", label: __("همه"), scope: "inbox", folder: "all" },
+				{ key: "inbox:order", label: __("دستور"), scope: "inbox", folder: "order", child: true },
+				{ key: "inbox:followup", label: __("پیگیری"), scope: "inbox", folder: "followup", child: true },
+				{ key: "inbox:action", label: __("اقدام"), scope: "inbox", folder: "action", child: true },
+				{ key: "inbox:notification", label: __("استحضار"), scope: "inbox", folder: "notification", child: true },
+				{ key: "inbox:info", label: __("اطلاع"), scope: "inbox", folder: "info", child: true },
+
+				{ group: true, label: __("کارتابل ارسالی (Outbox)") },
+				{ key: "outbox:all", label: __("همه"), scope: "outbox", state: "all" },
+				{ key: "outbox:in_progress", label: __("در دست اقدام"), scope: "outbox", state: "in_progress", child: true },
+				{ key: "outbox:approved", label: __("تأیید شده‌ها"), scope: "outbox", state: "approved", child: true },
+				{ key: "outbox:rejected", label: __("رد شده‌ها"), scope: "outbox", state: "rejected", child: true },
+
+				{ group: true, label: __("سایر") },
+				{ key: "search", label: __("جستجو"), scope: "search" },
+				{ key: "yic", label: __("کارتابل YIC"), scope: "yic" },
+				{ key: "drafts", label: __("پیش‌نویس‌ها"), scope: "drafts" },
+				{ key: "private", label: __("خصوصی"), scope: "visibility", visibility: "private", child: true },
+				{ key: "public", label: __("عمومی"), scope: "visibility", visibility: "public", child: true },
+				{ key: "settings", label: __("تنظیمات"), scope: "settings" },
 			],
 		};
 	},
 	computed: {
-		availableDocTypes() {
-			return [...new Set(this.items.map((i) => i.reference_doctype))].sort();
+		activeNode() {
+			return this.folders.find((f) => !f.group && f.key === this.activeFolder) || {};
+		},
+		activeLabel() {
+			return this.activeNode.label || __("کارتابل");
+		},
+		scope() {
+			return this.activeNode.scope;
 		},
 		filteredItems() {
 			const q = this.search.trim().toLowerCase();
 			return this.items.filter((item) => {
-				if (this.docTypeFilter && item.reference_doctype !== this.docTypeFilter) {
-					return false;
-				}
+				if (this.urgencyFilter && item.urgency !== this.urgencyFilter) return false;
 				if (!q) return true;
-				// Lightweight semantic-ish search across the meaningful fields.
-				const haystack = [
-					item.reference_title,
-					item.reference_name,
+				const hay = [
+					item.title,
+					item.subtitle,
 					item.instruction,
 					item.sender,
 					item.recipient,
-					item.action_type,
-					item.status,
+					item.referral_type,
+					item.statusLabel,
 				]
 					.filter(Boolean)
 					.join(" ")
 					.toLowerCase();
-				// every search token must be present somewhere
-				return q.split(/\s+/).every((token) => haystack.includes(token));
+				return q.split(/\s+/).every((t) => hay.includes(t));
 			});
 		},
 	},
 	mounted() {
 		this.refresh();
-		// Live cartable: refresh when a new referral lands for this user.
-		this._onInboxUpdate = (data) => {
-			frappe.show_alert({
-				message: __("New referral: {0}", [data.subject || ""]),
-				indicator: "blue",
-			});
-			this.refresh();
-		};
-		frappe.realtime.on("oa_inbox_update", this._onInboxUpdate);
+		this._onUpdate = () => this.refresh();
+		frappe.realtime.on("oa_inbox_update", this._onUpdate);
 	},
 	beforeUnmount() {
-		if (this._onInboxUpdate) {
-			frappe.realtime.off("oa_inbox_update", this._onInboxUpdate);
-		}
+		if (this._onUpdate) frappe.realtime.off("oa_inbox_update", this._onUpdate);
 	},
 	methods: {
 		__,
-		setTab(key) {
-			this.activeTab = key;
-			this.loadItems();
+		badge(node) {
+			if (node.scope === "inbox") return this.counts.inbox?.[node.folder] || null;
+			if (node.scope === "outbox") return this.counts.outbox?.[node.state] || null;
+			if (node.scope === "drafts") return this.counts.drafts || null;
+			return null;
 		},
 		async refresh() {
-			await Promise.all([this.loadItems(), this.loadCounts()]);
+			await Promise.all([this.loadFolder(), this.loadCounts()]);
 		},
 		async loadCounts() {
 			try {
-				this.counts = await frappe.xcall(
-					"office_automation.office_automation.api.inbox.get_inbox_counts"
-				);
+				this.counts = await frappe.xcall(API + "get_folder_counts");
 			} catch (e) {
-				// non-fatal: counts are decorative
+				/* decorative */
 			}
 		},
-		async loadItems() {
+		selectFolder(node) {
+			this.activeFolder = node.key;
+			if (node.scope === "settings") {
+				frappe.set_route("Form", "Office Automation Settings");
+				return;
+			}
+			if (node.scope === "search") {
+				this.$nextTick(() => this.$refs.search && this.$refs.search.focus());
+			}
+			this.loadFolder();
+		},
+		async loadFolder() {
+			const node = this.activeNode;
+			if (!node.scope || node.scope === "settings") return;
 			this.loading = true;
 			try {
-				if (this.activeTab === "sent") {
-					this.items = await frappe.xcall(
-						"office_automation.office_automation.api.inbox.get_sent_referrals"
-					);
-				} else {
-					const all = await frappe.xcall(
-						"office_automation.office_automation.api.inbox.get_inbox_items"
-					);
-					this.items =
-						this.activeTab === "unread"
-							? all.filter((i) => i.status === "Unseen")
-							: all.filter((i) => i.status === "Seen");
+				let raw = [];
+				if (node.scope === "inbox" || node.scope === "search") {
+					raw = await frappe.xcall(API + "get_inbox_items", {
+						folder: node.folder || "all",
+					});
+					this.items = raw.map(this.normalizeReferral);
+				} else if (node.scope === "outbox") {
+					raw = await frappe.xcall(API + "get_outbox_items", { state: node.state });
+					this.items = raw.map(this.normalizeReferral);
+				} else if (node.scope === "yic") {
+					raw = await frappe.xcall(API + "get_yic_items");
+					this.items = raw.map(this.normalizeReferral);
+				} else if (node.scope === "drafts") {
+					raw = await frappe.xcall(API + "get_drafts");
+					this.items = raw.map(this.normalizeLetter);
+				} else if (node.scope === "visibility") {
+					raw = await frappe.xcall(API + "get_letters_by_visibility", {
+						visibility: node.visibility,
+					});
+					this.items = raw.map(this.normalizeLetter);
 				}
 			} catch (e) {
-				frappe.msgprint(__("Could not load inbox items."));
+				frappe.msgprint(__("بارگذاری انجام نشد."));
 				this.items = [];
 			} finally {
 				this.loading = false;
 			}
 		},
+		normalizeReferral(r) {
+			return {
+				...r,
+				kind: "referral",
+				title: r.reference_title,
+				subtitle: `${r.reference_doctype} · ${r.reference_name}`,
+				statusLabel: this.faStatus(r),
+			};
+		},
+		normalizeLetter(l) {
+			return {
+				...l,
+				kind: "letter",
+				reference_doctype: "Automation Letter",
+				reference_name: l.name,
+				title: l.subject || l.name,
+				subtitle: [l.letter_no, l.letter_type].filter(Boolean).join(" · "),
+				statusLabel: l.status,
+			};
+		},
+		needsDecision(item) {
+			return !item.is_cc && ["Order", "Follow-up", "Action"].includes(item.referral_type);
+		},
 		async openItem(item) {
-			if (item.status === "Unseen" && this.activeTab !== "sent") {
+			if (item.kind === "referral" && this.scope === "inbox" && item.status === "Unseen") {
 				try {
-					await frappe.xcall(
-						"office_automation.office_automation.doctype.document_referral.document_referral.mark_referral_seen",
-						{ referral: item.name }
-					);
+					await frappe.xcall(REF + "mark_referral_seen", { referral: item.name });
 					item.status = "Seen";
+					item.statusLabel = this.faStatus(item);
 					this.loadCounts();
 				} catch (e) {
 					/* ignore */
@@ -213,65 +295,95 @@ export default {
 		openReference(item) {
 			frappe.set_route("Form", item.reference_doctype, item.reference_name);
 		},
-		async markActioned(item) {
-			await frappe.xcall(
-				"office_automation.office_automation.doctype.document_referral.document_referral.mark_referral_actioned",
-				{ referral: item.name }
-			);
-			frappe.show_alert({ message: __("Marked as actioned"), indicator: "green" });
+		async acknowledge(item) {
+			await frappe.xcall(REF + "mark_referral_actioned", { referral: item.name });
+			frappe.show_alert({ message: __("انجام شد"), indicator: "green" });
 			this.refresh();
 		},
-		forward(item) {
+		decide(item, kind) {
+			const isApprove = kind === "approve";
 			const d = new frappe.ui.Dialog({
-				title: __("Forward (Erja)"),
+				title: isApprove ? __("تأیید ارجاع") : __("رد / بازگشت ارجاع"),
 				fields: [
-					{
-						label: __("Recipient"),
-						fieldname: "recipient",
-						fieldtype: "Link",
-						options: "User",
-						reqd: 1,
-					},
-					{
-						label: __("Action Type"),
-						fieldname: "action_type",
-						fieldtype: "Link",
-						options: "Action Type",
-					},
-					{
-						label: __("Instruction (هامش‌نویسی)"),
-						fieldname: "instruction",
-						fieldtype: "Small Text",
-					},
+					{ label: __("یادداشت (هامش‌نویسی)"), fieldname: "note", fieldtype: "Small Text" },
 				],
-				primary_action_label: __("Forward"),
-				primary_action: async (values) => {
-					await frappe.xcall(
-						"office_automation.office_automation.doctype.document_referral.document_referral.forward_document",
-						{
-							doc_type: item.reference_doctype,
-							doc_name: item.reference_name,
-							recipient: values.recipient,
-							instruction: values.instruction,
-							action_type: values.action_type,
-							parent_referral: item.name,
-						}
-					);
+				primary_action_label: isApprove ? __("تأیید") : __("رد"),
+				primary_action: async (v) => {
+					await frappe.xcall(REF + (isApprove ? "approve_referral" : "reject_referral"), {
+						referral: item.name,
+						note: v.note,
+					});
 					d.hide();
 					frappe.show_alert({
-						message: __("Forwarded to {0}", [values.recipient]),
-						indicator: "green",
+						message: isApprove ? __("تأیید شد") : __("رد شد"),
+						indicator: isApprove ? "green" : "red",
 					});
 					this.refresh();
 				},
 			});
 			d.show();
 		},
-		statusColor(status) {
-			return (
-				{ Draft: "gray", Unseen: "orange", Seen: "blue", Actioned: "green" }[status] ||
-				"gray"
-			);
+		forward(item) {
+			const d = new frappe.ui.Dialog({
+				title: __("ارجاع (Erja)"),
+				fields: [
+					{ label: __("گیرنده"), fieldname: "recipient", fieldtype: "Link", options: "User", reqd: 1 },
+					{
+						label: __("نوع ارجاع"),
+						fieldname: "referral_type",
+						fieldtype: "Select",
+						options: "Order\nFollow-up\nAction\nNotification\nInfo",
+						default: "Action",
+					},
+					{ label: __("نوع اقدام"), fieldname: "action_type", fieldtype: "Link", options: "Action Type" },
+					{ label: __("هامش‌نویسی"), fieldname: "instruction", fieldtype: "Small Text" },
+				],
+				primary_action_label: __("ارجاع"),
+				primary_action: async (v) => {
+					await frappe.xcall(REF + "forward_document", {
+						doc_type: item.reference_doctype,
+						doc_name: item.reference_name,
+						recipient: v.recipient,
+						referral_type: v.referral_type,
+						action_type: v.action_type,
+						instruction: v.instruction,
+						parent_referral: item.kind === "referral" ? item.name : null,
+					});
+					d.hide();
+					frappe.show_alert({ message: __("ارجاع شد به {0}", [v.recipient]), indicator: "green" });
+					this.refresh();
+				},
+			});
+			d.show();
+		},
+		createLetter() {
+			frappe.new_doc("Automation Letter");
+		},
+		cardClass(item) {
+			return {
+				unseen: item.kind === "referral" && item.status === "Unseen",
+				immediate: item.urgency === "Immediate",
+				urgent: item.urgency === "Urgent",
+			};
+		},
+		statusColor(item) {
+			if (item.outcome === "Approved") return "green";
+			if (item.outcome === "Rejected") return "red";
+			return { Draft: "gray", Unseen: "orange", Seen: "blue", Actioned: "green" }[item.status] || "gray";
+		},
+		faStatus(r) {
+			if (r.outcome === "Approved") return __("تأیید شده");
+			if (r.outcome === "Rejected") return __("رد شده");
+			return { Unseen: __("دیده‌نشده"), Seen: __("دیده‌شده"), Actioned: __("اتمام‌یافته"), Draft: __("پیش‌نویس") }[r.status] || r.status;
+		},
+		faType(t) {
+			return { Order: __("دستور"), "Follow-up": __("پیگیری"), Action: __("اقدام"), Notification: __("استحضار"), Info: __("اطلاع") }[t] || t;
+		},
+		faUrgency(u) {
+			return { Urgent: __("فوری"), Immediate: __("آنی"), Normal: __("عادی") }[u] || u;
+		},
+		faConf(c) {
+			return { Confidential: __("محرمانه"), Secret: __("سری"), Normal: __("عادی") }[c] || c;
 		},
 		prettyTime(dt) {
 			return frappe.datetime.comment_when ? frappe.datetime.comment_when(dt) : dt;
@@ -281,31 +393,85 @@ export default {
 </script>
 
 <style scoped>
-.oa-inbox {
-	padding: 4px 0 24px;
-}
-.oa-toolbar {
+.oa-cartable {
 	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	margin-bottom: 16px;
+	gap: 16px;
+	align-items: flex-start;
 }
-.oa-filters {
+.oa-sidebar {
+	flex: 0 0 240px;
+	border: 1px solid var(--border-color, #e2e2e2);
+	border-radius: 10px;
+	padding: 10px;
+	background: var(--card-bg, #fff);
+	position: sticky;
+	top: 12px;
+}
+.oa-new-btn {
+	margin-bottom: 10px;
+}
+.oa-group-title {
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--text-muted, #8d99a6);
+	margin: 12px 6px 4px;
+	text-transform: uppercase;
+}
+.oa-folder {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 6px;
+	color: var(--text-color, #1f272e);
+	text-decoration: none;
+	font-size: 13px;
+}
+.oa-folder.child {
+	padding-inline-start: 22px;
+	font-size: 12.5px;
+}
+.oa-folder:hover {
+	background: var(--bg-light-gray, #f4f5f6);
+}
+.oa-folder.active {
+	background: var(--bg-blue, #e7f0ff);
+	color: var(--blue-600, #1565d8);
+	font-weight: 600;
+}
+.oa-count {
+	background: var(--gray-400, #b8c2cc);
+	color: #fff;
+	border-radius: 10px;
+	padding: 0 7px;
+	font-size: 11px;
+}
+.oa-main {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.oa-main-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
+}
+.oa-title {
+	margin: 0;
+}
+.oa-tools {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 	flex-wrap: wrap;
 }
 .oa-search {
-	max-width: 360px;
+	max-width: 320px;
 }
-.oa-filter-select {
-	max-width: 220px;
-}
-.oa-badge {
-	background: var(--gray-600, #6b7280);
-	color: #fff;
-	margin-left: 6px;
+.oa-mini {
+	max-width: 150px;
 }
 .oa-card {
 	border: 1px solid var(--border-color, #e2e2e2);
@@ -313,43 +479,96 @@ export default {
 	padding: 12px 14px;
 	margin-bottom: 10px;
 	cursor: pointer;
-	transition: box-shadow 0.15s ease;
 	background: var(--card-bg, #fff);
+	transition: box-shadow 0.15s ease;
 }
 .oa-card:hover {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .oa-card.unseen {
-	border-left: 3px solid var(--orange-500, #f59e0b);
+	border-inline-start: 3px solid var(--orange-500, #f59e0b);
+}
+.oa-card.immediate {
+	border-inline-start: 3px solid var(--red-500, #e03636);
+}
+.oa-card.urgent {
+	border-inline-start: 3px solid var(--orange-400, #ff8c00);
 }
 .oa-card-head {
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
+	align-items: flex-start;
+	gap: 8px;
 	margin-bottom: 4px;
 }
 .oa-subject {
 	font-weight: 600;
 }
-.oa-card-meta {
+.oa-badges {
 	display: flex;
-	gap: 8px;
+	gap: 4px;
 	flex-wrap: wrap;
+}
+.pill {
+	display: inline-block;
+	font-size: 10px;
+	padding: 1px 8px;
+	border-radius: 10px;
+	background: #eef1f4;
+	color: #5e6d7a;
+}
+.pill.urgent {
+	background: #fff3e0;
+	color: #c25700;
+}
+.pill.conf {
+	background: #fde8e8;
+	color: #b42318;
+}
+.pill.cc {
+	background: #eef2ff;
+	color: #3538cd;
+}
+.pill.green {
+	background: #e6f4ea;
+	color: #137333;
+}
+.pill.red {
+	background: #fde8e8;
+	color: #b42318;
+}
+.pill.orange {
+	background: #fff3e0;
+	color: #c25700;
+}
+.pill.blue {
+	background: #e7f0ff;
+	color: #1565d8;
+}
+.pill.gray {
+	background: #eef1f4;
+	color: #5e6d7a;
+}
+.oa-meta {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
 	font-size: 12px;
 	margin-bottom: 6px;
+	flex-wrap: wrap;
 }
 .oa-instruction {
 	font-size: 13px;
 	white-space: pre-wrap;
 	margin-bottom: 8px;
 }
-.oa-card-actions {
+.oa-actions {
 	display: flex;
 	gap: 6px;
+	flex-wrap: wrap;
 }
-.oa-empty,
-.oa-loading {
-	padding: 32px;
+.oa-empty {
+	padding: 40px;
 	text-align: center;
 }
 </style>

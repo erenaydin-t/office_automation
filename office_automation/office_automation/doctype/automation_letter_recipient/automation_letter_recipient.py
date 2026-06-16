@@ -21,6 +21,7 @@ class AutomationLetterRecipient(Document):
 		parenttype: DF.Data
 		recipient: DF.Link
 		recipient_name: DF.Data | None
+		referral_type: DF.Literal["Order", "Follow-up", "Action", "Notification", "Info"]
 	# end: auto-generated types
 
 	pass

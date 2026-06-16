@@ -16,10 +16,17 @@
   "date",
   "sender",
   "status",
+  "classification_section",
+  "confidentiality",
+  "urgency",
+  "column_break_class",
+  "is_private",
   "body_section",
   "body",
   "recipients_section",
   "recipients",
+  "cc_section",
+  "cc_recipients",
   "attachments_section",
   "attachments",
   "archive_section",
@@ -96,6 +103,40 @@
    "read_only": 1
   },
   {
+   "fieldname": "classification_section",
+   "fieldtype": "Section Break",
+   "label": "Classification"
+  },
+  {
+   "default": "Normal",
+   "description": "Restricts visibility: Confidential/Secret letters are limited to managers and parties on the letter.",
+   "fieldname": "confidentiality",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Confidentiality",
+   "options": "Normal\nConfidential\nSecret"
+  },
+  {
+   "default": "Normal",
+   "fieldname": "urgency",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Urgency",
+   "options": "Normal\nUrgent\nImmediate"
+  },
+  {
+   "fieldname": "column_break_class",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Private letters are visible only to the sender and parties on the letter.",
+   "fieldname": "is_private",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Private"
+  },
+  {
    "fieldname": "body_section",
    "fieldtype": "Section Break",
    "label": "Body"
@@ -116,6 +157,19 @@
    "fieldname": "recipients",
    "fieldtype": "Table",
    "label": "Recipients",
+   "options": "Automation Letter Recipient"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "cc_section",
+   "fieldtype": "Section Break",
+   "label": "Carbon Copy (رونوشت)"
+  },
+  {
+   "description": "CC recipients receive the letter in their Info / FYI folder (read-only context, does not block the workflow).",
+   "fieldname": "cc_recipients",
+   "fieldtype": "Table",
+   "label": "CC",
    "options": "Automation Letter Recipient"
   },
   {

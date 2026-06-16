@@ -57,6 +57,35 @@ class TestAutomationLetter(FrappeTestCase):
 		# Letter moves from Registered to In Progress once sent.
 		self.assertEqual(frappe.db.get_value("Automation Letter", letter.name, "status"), "In Progress")
 
+	def test_cc_lands_in_info_folder(self):
+		from office_automation.office_automation.doctype.document_referral.test_document_referral import (
+			ensure_oa_user,
+		)
+
+		to_user = ensure_oa_user("test1@example.com")
+		cc_user = ensure_oa_user("test2@example.com")
+		letter = frappe.get_doc(
+			{
+				"doctype": "Automation Letter",
+				"subject": "With CC",
+				"date": frappe.utils.today(),
+				"sender": "Administrator",
+				"body": "<p>Body</p>",
+				"recipients": [{"recipient": to_user, "referral_type": "Action"}],
+				"cc_recipients": [{"recipient": cc_user}],
+			}
+		).insert(ignore_permissions=True)
+		letter.submit()
+
+		cc_ref = frappe.get_all(
+			"Document Referral",
+			filters={"reference_name": letter.name, "recipient": cc_user},
+			fields=["referral_type", "is_cc"],
+		)
+		self.assertEqual(len(cc_ref), 1)
+		self.assertEqual(cc_ref[0].referral_type, "Info")
+		self.assertEqual(cc_ref[0].is_cc, 1)
+
 	def test_cannot_send_to_self(self):
 		letter = frappe.get_doc(
 			{

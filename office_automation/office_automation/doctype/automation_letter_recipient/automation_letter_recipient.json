@@ -8,6 +8,7 @@
  "field_order": [
   "recipient",
   "recipient_name",
+  "referral_type",
   "action_type",
   "instruction"
  ],
@@ -29,6 +30,15 @@
    "in_list_view": 1,
    "label": "Name",
    "read_only": 1
+  },
+  {
+   "columns": 2,
+   "default": "Action",
+   "fieldname": "referral_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Referral Type",
+   "options": "Order\nFollow-up\nAction\nNotification\nInfo"
   },
   {
    "columns": 2,

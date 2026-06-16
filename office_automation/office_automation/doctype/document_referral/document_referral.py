@@ -24,12 +24,15 @@ class DocumentReferral(Document):
 		action_type: DF.Link | None
 		actioned_on: DF.Datetime | None
 		instruction: DF.SmallText | None
+		is_cc: DF.Check
 		is_overdue: DF.Check
 		naming_series: DF.Literal["REF-.YYYY.-"]
+		outcome: DF.Literal["Pending", "Approved", "Rejected"]
 		parent_referral: DF.Link | None
 		recipient: DF.Link
 		reference_doctype: DF.Link
 		reference_name: DF.DynamicLink
+		referral_type: DF.Literal["Order", "Follow-up", "Action", "Notification", "Info"]
 		seen_on: DF.Datetime | None
 		sender: DF.Link
 		status: DF.Literal["Draft", "Unseen", "Seen", "Actioned"]
@@ -125,9 +128,11 @@ class DocumentReferral(Document):
 			self.db_set("status", STATUS_SEEN, update_modified=False)
 			self.db_set("seen_on", now_datetime(), update_modified=False)
 
-	def mark_actioned(self):
+	def mark_actioned(self, outcome: str | None = None):
 		self.db_set("status", STATUS_ACTIONED, update_modified=False)
 		self.db_set("actioned_on", now_datetime(), update_modified=False)
+		if outcome:
+			self.db_set("outcome", outcome, update_modified=False)
 		if self.is_overdue:
 			self.db_set("is_overdue", 0, update_modified=False)
 		if not self.seen_on:
@@ -146,6 +151,7 @@ def forward_document(
 	recipient: str,
 	instruction: str | None = None,
 	action_type: str | None = None,
+	referral_type: str = "Action",
 	parent_referral: str | None = None,
 ):
 	"""Forward (Erja) a document to a recipient by creating a Document Referral.
@@ -179,6 +185,7 @@ def forward_document(
 		sender=sender,
 		instruction=instruction,
 		action_type=action_type,
+		referral_type=referral_type,
 		parent_referral=parent_referral,
 	)
 
@@ -197,14 +204,16 @@ def create_referral(
 	sender: str | None = None,
 	instruction: str | None = None,
 	action_type: str | None = None,
+	referral_type: str = "Action",
+	is_cc: bool = False,
 	parent_referral: str | None = None,
 	notify: bool = True,
 ):
 	"""Create a single Document Referral (the shared building block).
 
-	Used both by ``forward_document`` (Erja) and by Automation Letter's
-	internal "send to recipients" on submit. Inserts the row, nudges the
-	reference document's status, and fans out notifications.
+	Used by ``forward_document`` (Erja) and by Automation Letter's internal
+	"send to recipients / CC" on submit. Inserts the row, nudges the reference
+	document's status, and fans out notifications.
 	"""
 	referral = frappe.get_doc(
 		{
@@ -214,9 +223,12 @@ def create_referral(
 			"sender": sender or frappe.session.user,
 			"recipient": recipient,
 			"action_type": action_type,
+			"referral_type": referral_type or "Action",
+			"is_cc": 1 if is_cc else 0,
 			"instruction": instruction,
 			"parent_referral": parent_referral,
 			"status": STATUS_UNSEEN,
+			"outcome": "Pending",
 		}
 	)
 	referral.insert(ignore_permissions=True)
@@ -410,16 +422,82 @@ def mark_referral_seen(referral: str):
 
 
 @frappe.whitelist()
-def mark_referral_actioned(referral: str):
-	"""Mark a referral as actioned (handled / completed)."""
+def mark_referral_actioned(referral: str, outcome: str | None = None):
+	"""Mark a referral as actioned (handled / completed), optionally with an outcome."""
+	doc = _get_own_referral(referral)
+	doc.mark_actioned(outcome=outcome)
+	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
+	return doc.status
+
+
+@frappe.whitelist()
+def approve_referral(referral: str, note: str | None = None):
+	"""Recipient approves the referral (Outbox -> Approved for the sender)."""
+	doc = _get_own_referral(referral)
+	if note:
+		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
+	doc.mark_actioned(outcome="Approved")
+	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
+	_notify_outcome(doc, "Approved")
+	frappe.db.commit()
+	return doc.outcome
+
+
+@frappe.whitelist()
+def reject_referral(referral: str, note: str | None = None):
+	"""Recipient rejects / sends back the referral (Outbox -> Rejected)."""
+	doc = _get_own_referral(referral)
+	if note:
+		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
+	doc.mark_actioned(outcome="Rejected")
+	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
+	_notify_outcome(doc, "Rejected")
+	frappe.db.commit()
+	return doc.outcome
+
+
+def _get_own_referral(referral: str):
 	doc = frappe.get_doc("Document Referral", referral)
 	if doc.recipient != frappe.session.user and not frappe.has_permission(
 		"Document Referral", doc=doc, ptype="write"
 	):
 		frappe.throw(_("You can only update your own inbox items."), frappe.PermissionError)
-	doc.mark_actioned()
-	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
-	return doc.status
+	return doc
+
+
+def _append_note(existing: str | None, note: str) -> str:
+	stamp = f"[{frappe.utils.get_fullname(frappe.session.user)}] {note}"
+	return f"{existing}\n{stamp}" if existing else stamp
+
+
+def _notify_outcome(doc, outcome: str):
+	"""Tell the original sender that their referral was approved/rejected."""
+	try:
+		subject = _("Referral {0}: {1} {2}").format(outcome, doc.reference_doctype, doc.reference_name)
+		frappe.get_doc(
+			{
+				"doctype": "Notification Log",
+				"subject": subject,
+				"for_user": doc.sender,
+				"type": "Alert",
+				"document_type": "Document Referral",
+				"document_name": doc.name,
+				"from_user": doc.recipient,
+			}
+		).insert(ignore_permissions=True)
+		from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
+			get_settings,
+		)
+
+		if get_settings().realtime_update:
+			frappe.publish_realtime(
+				event="oa_inbox_update",
+				message={"referral": doc.name, "subject": subject, "outcome": outcome},
+				user=doc.sender,
+				after_commit=True,
+			)
+	except Exception:
+		frappe.log_error(title="office_automation: outcome notification failed")
 
 
 def _maybe_close_reference(doc_type: str, doc_name: str):

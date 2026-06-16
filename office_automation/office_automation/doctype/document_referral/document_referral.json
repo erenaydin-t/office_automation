@@ -13,8 +13,11 @@
   "reference_name",
   "column_break_ref",
   "parent_referral",
+  "referral_type",
   "action_type",
   "status",
+  "outcome",
+  "is_cc",
   "routing_section",
   "sender",
   "column_break_routing",
@@ -71,6 +74,17 @@
    "search_index": 1
   },
   {
+   "default": "Action",
+   "description": "Cartable folder this referral lands in for the recipient.",
+   "fieldname": "referral_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Referral Type",
+   "options": "Order\nFollow-up\nAction\nNotification\nInfo",
+   "search_index": 1
+  },
+  {
    "fieldname": "action_type",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -86,6 +100,23 @@
    "label": "Status",
    "options": "Draft\nUnseen\nSeen\nActioned",
    "search_index": 1
+  },
+  {
+   "default": "Pending",
+   "description": "Recipient's decision; drives the sender's Outbox folders.",
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Outcome",
+   "options": "Pending\nApproved\nRejected",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "This recipient was carbon-copied (CC) for information only.",
+   "fieldname": "is_cc",
+   "fieldtype": "Check",
+   "label": "Is CC"
   },
   {
    "fieldname": "routing_section",

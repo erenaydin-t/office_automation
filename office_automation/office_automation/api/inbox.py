@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Milanpars and contributors
 # For license information, please see license.txt
-"""Whitelisted endpoints backing the Cartable (Inbox) SPA."""
+"""Whitelisted endpoints backing the Cartable (Inbox) SPA and its folders."""
 
 import frappe
 from frappe import _
@@ -9,9 +9,37 @@ from office_automation.office_automation.permissions.delegation import get_effec
 
 OPEN_STATUSES = ("Unseen", "Seen")
 
+# Inbox folder key -> referral_type value. "all" means no type filter.
+INBOX_FOLDERS = {
+	"all": None,
+	"order": "Order",
+	"followup": "Follow-up",
+	"action": "Action",
+	"notification": "Notification",
+	"info": "Info",
+}
 
-def _enrich_with_reference(rows: list[dict]) -> list[dict]:
-	"""Attach the referenced document's subject/title for display.
+REFERRAL_FIELDS = [
+	"name",
+	"reference_doctype",
+	"reference_name",
+	"sender",
+	"recipient",
+	"action_type",
+	"referral_type",
+	"instruction",
+	"status",
+	"outcome",
+	"is_cc",
+	"is_overdue",
+	"parent_referral",
+	"creation",
+	"modified",
+]
+
+
+def _enrich(rows: list[dict]) -> list[dict]:
+	"""Attach the referenced document's title (+ letter metadata) for display.
 
 	Batches lookups per doctype to avoid N+1 queries.
 	"""
@@ -19,105 +47,203 @@ def _enrich_with_reference(rows: list[dict]) -> list[dict]:
 	for row in rows:
 		by_doctype.setdefault(row["reference_doctype"], set()).add(row["reference_name"])
 
-	titles: dict[tuple, str] = {}
+	meta_map: dict[tuple, dict] = {}
 	for doctype, names in by_doctype.items():
+		fields = ["name"]
 		meta = frappe.get_meta(doctype)
-		title_field = meta.get_title_field() if meta else "name"
+		title_field = (meta.get_title_field() if meta else None) or "name"
+		if title_field != "name":
+			fields.append(f"{title_field} as _title")
+		if doctype == "Automation Letter":
+			fields += ["urgency", "confidentiality", "is_private", "date as letter_date"]
 		records = frappe.get_all(
-			doctype,
-			filters={"name": ["in", list(names)]},
-			fields=["name", f"{title_field} as _title"],
-			ignore_permissions=True,
+			doctype, filters={"name": ["in", list(names)]}, fields=fields, ignore_permissions=True
 		)
 		for rec in records:
-			titles[(doctype, rec["name"])] = rec.get("_title") or rec["name"]
+			meta_map[(doctype, rec["name"])] = rec
 
 	for row in rows:
-		row["reference_title"] = titles.get(
-			(row["reference_doctype"], row["reference_name"]), row["reference_name"]
-		)
+		rec = meta_map.get((row["reference_doctype"], row["reference_name"]), {})
+		row["reference_title"] = rec.get("_title") or row["reference_name"]
+		row["urgency"] = rec.get("urgency")
+		row["confidentiality"] = rec.get("confidentiality")
+		row["is_private"] = rec.get("is_private")
+		row["letter_date"] = rec.get("letter_date")
 	return rows
 
 
-@frappe.whitelist()
-def get_inbox_items(user: str | None = None) -> list[dict]:
-	"""Open inbox items (کارتابل) for the user.
-
-	Returns ``Document Referral`` rows where the user — or any delegator they
-	currently substitute for — is the *Recipient* and the status is not
-	``Actioned``.
-	"""
+def _recipients_for(user: str | None) -> list[str]:
 	user = user or frappe.session.user
-
-	# A user may only fetch their own cartable (or one they are delegated into,
-	# which is handled implicitly because get_effective_users resolves on the
-	# *session* user, not the requested one).
 	if user != frappe.session.user and user not in get_effective_users(frappe.session.user):
 		frappe.throw(_("You can only access your own inbox."), frappe.PermissionError)
+	return get_effective_users(user) if user == frappe.session.user else [user]
 
-	recipients = get_effective_users(user) if user == frappe.session.user else [user]
 
+# --------------------------------------------------------------------------- #
+# Inbox (received)
+# --------------------------------------------------------------------------- #
+@frappe.whitelist()
+def get_inbox_items(user: str | None = None, folder: str = "all") -> list[dict]:
+	"""Open inbox items for the user, optionally filtered by folder.
+
+	``folder`` is one of: all, order, followup, action, notification, info.
+	Returns ``Document Referral`` rows where the user (or a delegator they
+	substitute for) is the recipient and the status is not ``Actioned``.
+	"""
+	recipients = _recipients_for(user)
+	filters = {"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]}
+
+	referral_type = INBOX_FOLDERS.get(folder)
+	if referral_type:
+		filters["referral_type"] = referral_type
+
+	rows = frappe.get_all(
+		"Document Referral",
+		filters=filters,
+		fields=REFERRAL_FIELDS,
+		order_by="creation desc",
+		ignore_permissions=True,
+	)
+	return _enrich(rows)
+
+
+@frappe.whitelist()
+def get_yic_items(user: str | None = None) -> list[dict]:
+	"""YIC Inbox — a department/workflow folder.
+
+	Custom query logic: open inbox items whose referenced Automation Letter is
+	tagged for the YIC workflow (``letter_type == "YIC"``). Adjust the rule here
+	to match your organisation's routing.
+	"""
+	recipients = _recipients_for(user)
+	yic_letters = frappe.get_all(
+		"Automation Letter", filters={"letter_type": "YIC"}, pluck="name", ignore_permissions=True
+	)
+	if not yic_letters:
+		return []
 	rows = frappe.get_all(
 		"Document Referral",
 		filters={
 			"recipient": ["in", recipients],
 			"status": ["in", OPEN_STATUSES],
+			"reference_doctype": "Automation Letter",
+			"reference_name": ["in", yic_letters],
 		},
-		fields=[
-			"name",
-			"reference_doctype",
-			"reference_name",
-			"sender",
-			"recipient",
-			"action_type",
-			"instruction",
-			"status",
-			"parent_referral",
-			"creation",
-			"modified",
-		],
+		fields=REFERRAL_FIELDS,
 		order_by="creation desc",
 		ignore_permissions=True,
 	)
-	return _enrich_with_reference(rows)
+	return _enrich(rows)
 
 
+# --------------------------------------------------------------------------- #
+# Outbox (sent)
+# --------------------------------------------------------------------------- #
 @frappe.whitelist()
-def get_sent_referrals(user: str | None = None) -> list[dict]:
-	"""Referrals the user has sent out (Sent Referrals tab)."""
+def get_outbox_items(user: str | None = None, state: str = "all") -> list[dict]:
+	"""Referrals sent by the user. ``state``: all | in_progress | approved | rejected."""
 	user = user or frappe.session.user
 	senders = get_effective_users(user) if user == frappe.session.user else [user]
+	filters = {"sender": ["in", senders]}
+
+	if state == "in_progress":
+		filters["status"] = ["in", OPEN_STATUSES]
+	elif state == "approved":
+		filters["outcome"] = "Approved"
+	elif state == "rejected":
+		filters["outcome"] = "Rejected"
 
 	rows = frappe.get_all(
 		"Document Referral",
-		filters={"sender": ["in", senders]},
-		fields=[
-			"name",
-			"reference_doctype",
-			"reference_name",
-			"sender",
-			"recipient",
-			"action_type",
-			"instruction",
-			"status",
-			"parent_referral",
-			"creation",
-			"modified",
-		],
+		filters=filters,
+		fields=REFERRAL_FIELDS,
 		order_by="creation desc",
 		ignore_permissions=True,
 	)
-	return _enrich_with_reference(rows)
+	return _enrich(rows)
+
+
+# --------------------------------------------------------------------------- #
+# Letters (drafts / visibility)
+# --------------------------------------------------------------------------- #
+@frappe.whitelist()
+def get_drafts(user: str | None = None) -> list[dict]:
+	"""Unsubmitted letters owned by the user (docstatus == 0)."""
+	user = user or frappe.session.user
+	owners = get_effective_users(user) if user == frappe.session.user else [user]
+	return frappe.get_all(
+		"Automation Letter",
+		filters={"docstatus": 0, "owner": ["in", owners]},
+		fields=[
+			"name",
+			"subject",
+			"letter_no",
+			"date",
+			"letter_type",
+			"urgency",
+			"confidentiality",
+			"is_private",
+			"status",
+			"modified",
+		],
+		order_by="modified desc",
+	)
 
 
 @frappe.whitelist()
-def get_inbox_counts(user: str | None = None) -> dict:
-	"""Badge counts for the three tabs."""
+def get_letters_by_visibility(visibility: str = "public") -> list[dict]:
+	"""Letters filtered by the private/public flag (permission filters still apply)."""
+	is_private = 1 if visibility == "private" else 0
+	return frappe.get_all(
+		"Automation Letter",
+		filters={"is_private": is_private, "docstatus": ["!=", 2]},
+		fields=[
+			"name",
+			"subject",
+			"letter_no",
+			"date",
+			"letter_type",
+			"urgency",
+			"confidentiality",
+			"is_private",
+			"status",
+			"sender",
+			"modified",
+		],
+		order_by="modified desc",
+	)
+
+
+# --------------------------------------------------------------------------- #
+# Counts for the sidebar badges
+# --------------------------------------------------------------------------- #
+@frappe.whitelist()
+def get_folder_counts(user: str | None = None) -> dict:
+	"""Badge counts for every sidebar folder."""
 	user = user or frappe.session.user
 	recipients = get_effective_users(user)
 
-	unread = frappe.db.count("Document Referral", {"recipient": ["in", recipients], "status": "Unseen"})
-	pending = frappe.db.count("Document Referral", {"recipient": ["in", recipients], "status": "Seen"})
-	sent = frappe.db.count("Document Referral", {"sender": ["in", recipients]})
+	def inbox_count(referral_type=None):
+		f = {"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]}
+		if referral_type:
+			f["referral_type"] = referral_type
+		return frappe.db.count("Document Referral", f)
 
-	return {"unread": unread, "pending": pending, "sent": sent}
+	inbox = {key: inbox_count(rt) for key, rt in INBOX_FOLDERS.items()}
+
+	outbox = {
+		"all": frappe.db.count("Document Referral", {"sender": ["in", recipients]}),
+		"in_progress": frappe.db.count(
+			"Document Referral", {"sender": ["in", recipients], "status": ["in", OPEN_STATUSES]}
+		),
+		"approved": frappe.db.count(
+			"Document Referral", {"sender": ["in", recipients], "outcome": "Approved"}
+		),
+		"rejected": frappe.db.count(
+			"Document Referral", {"sender": ["in", recipients], "outcome": "Rejected"}
+		),
+	}
+
+	drafts = frappe.db.count("Automation Letter", {"docstatus": 0, "owner": ["in", recipients]})
+
+	return {"inbox": inbox, "outbox": outbox, "drafts": drafts}

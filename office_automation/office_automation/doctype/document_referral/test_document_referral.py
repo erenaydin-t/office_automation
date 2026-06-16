@@ -5,8 +5,10 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from office_automation.office_automation.doctype.document_referral.document_referral import (
+	approve_referral,
 	forward_document,
 	get_referral_tree,
+	reject_referral,
 )
 
 OA_USER_ROLE = "Office Automation User"
@@ -96,3 +98,23 @@ class TestDocumentReferral(FrappeTestCase):
 		frappe.set_user(stranger)
 		with self.assertRaises(frappe.PermissionError):
 			forward_document("Automation Letter", self.letter.name, self.user1, "No access")
+
+	def test_approve_sets_outcome(self):
+		ref = forward_document(
+			"Automation Letter", self.letter.name, self.user1, "Please approve", referral_type="Action"
+		)
+		frappe.set_user(self.user1)
+		approve_referral(ref, note="Looks good")
+		frappe.set_user("Administrator")
+		row = frappe.db.get_value("Document Referral", ref, ["status", "outcome"], as_dict=True)
+		self.assertEqual(row.status, "Actioned")
+		self.assertEqual(row.outcome, "Approved")
+
+	def test_reject_sets_outcome(self):
+		ref = forward_document(
+			"Automation Letter", self.letter.name, self.user1, "Please review", referral_type="Action"
+		)
+		frappe.set_user(self.user1)
+		reject_referral(ref, note="Needs rework")
+		frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.get_value("Document Referral", ref, "outcome"), "Rejected")

@@ -27,7 +27,10 @@ class AutomationLetter(Document):
 		archive_name: DF.DynamicLink | None
 		attachments: DF.Table[AutomationLetterAttachment]
 		body: DF.TextEditor | None
+		cc_recipients: DF.Table[AutomationLetterRecipient]
+		confidentiality: DF.Literal["Normal", "Confidential", "Secret"]
 		date: DF.Date
+		is_private: DF.Check
 		letter_no: DF.Data | None
 		letter_type: DF.Link | None
 		naming_series: DF.Literal["AL-.YYYY.-"]
@@ -35,6 +38,7 @@ class AutomationLetter(Document):
 		sender: DF.Link
 		status: DF.Literal["Draft", "Registered", "In Progress", "Closed", "Cancelled"]
 		subject: DF.Data
+		urgency: DF.Literal["Normal", "Urgent", "Immediate"]
 	# end: auto-generated types
 
 	def validate(self):
@@ -46,12 +50,13 @@ class AutomationLetter(Document):
 		self._validate_recipients()
 
 	def _validate_recipients(self):
+		"""No self-addressing, and a user may not appear twice across To + CC."""
 		seen = set()
-		for row in self.recipients:
+		for row in [*self.recipients, *self.cc_recipients]:
 			if row.recipient == self.sender:
 				frappe.throw(_("Row #{0}: A letter cannot be sent to its own sender.").format(row.idx))
 			if row.recipient in seen:
-				frappe.throw(_("Row #{0}: {1} is listed more than once.").format(row.idx, row.recipient))
+				frappe.throw(_("{0} is listed more than once across Recipients/CC.").format(row.recipient))
 			seen.add(row.recipient)
 
 	def before_submit(self):
@@ -60,7 +65,7 @@ class AutomationLetter(Document):
 		self.status = "Registered"
 
 	def on_submit(self):
-		# Submitting registers the letter AND sends it to every listed recipient,
+		# Submitting registers the letter AND sends it to every recipient (and CC),
 		# creating a root Document Referral (Cartable item) for each.
 		self.send_to_recipients()
 
@@ -68,7 +73,11 @@ class AutomationLetter(Document):
 		self.status = "Cancelled"
 
 	def send_to_recipients(self):
-		"""Create a root referral for each recipient row (the internal 'send')."""
+		"""Create a root referral for each To recipient and each CC recipient.
+
+		CC rows always land in the recipient's Info / FYI folder and are flagged
+		``is_cc`` so they never block the main workflow.
+		"""
 		from office_automation.office_automation.doctype.document_referral.document_referral import (
 			create_referral,
 		)
@@ -81,4 +90,17 @@ class AutomationLetter(Document):
 				sender=self.sender,
 				instruction=row.instruction,
 				action_type=row.action_type,
+				referral_type=row.referral_type or "Action",
+			)
+
+		for row in self.cc_recipients:
+			create_referral(
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+				recipient=row.recipient,
+				sender=self.sender,
+				instruction=row.instruction,
+				action_type=row.action_type,
+				referral_type="Info",
+				is_cc=True,
 			)

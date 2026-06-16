@@ -8,6 +8,15 @@ frappe.ui.form.on("Automation Letter", {
 			frm.add_custom_button(__("Add Recipient"), () =>
 				office_automation_add_recipient_dialog(frm)
 			);
+
+			// "Submit & Refer" — submit (which sends to recipients) then open the
+			// Erja dialog to route it onward immediately.
+			if (!frm.is_new()) {
+				frm.add_custom_button(__("Submit & Refer"), () => {
+					frm.savesubmit().then(() => office_automation_forward_dialog(frm));
+				});
+			}
+
 			if (!(frm.doc.recipients || []).length) {
 				frm.dashboard.set_headline(
 					__(
@@ -93,6 +102,13 @@ function office_automation_forward_dialog(frm) {
 				reqd: 1,
 			},
 			{
+				label: __("Referral Type"),
+				fieldname: "referral_type",
+				fieldtype: "Select",
+				options: "Order\nFollow-up\nAction\nNotification\nInfo",
+				default: "Action",
+			},
+			{
 				label: __("Action Type"),
 				fieldname: "action_type",
 				fieldtype: "Link",
@@ -119,6 +135,7 @@ function office_automation_forward_dialog(frm) {
 					doc_type: frm.doctype,
 					doc_name: frm.docname,
 					recipient: values.recipient,
+					referral_type: values.referral_type,
 					instruction: values.instruction,
 					action_type: values.action_type,
 					parent_referral: values.parent_referral,

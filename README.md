@@ -15,7 +15,10 @@ compliant so it can be dropped onto any Frappe v16 bench.
 |--------------|--------------|----------------|
 | نامه / مکاتبات | Correspondence letter | **Automation Letter** (Submittable DocType) |
 | ارجاع | Referral | **Document Referral** (tree-based ledger, not Frappe Workflow) |
-| کارتابل | Unified inbox | **Inbox** Frappe Page + Vue 3 SPA |
+| کارتابل دریافتی/ارسالی | Inbox / Outbox folders | Vue 3 SPA with sidebar folders by referral type (دستور/پیگیری/اقدام/استحضار/اطلاع) and outbox state (in progress/approved/rejected) |
+| رونوشت | Carbon Copy (CC) | CC recipients land in the Info / FYI folder, non-blocking |
+| محرمانگی / فوریت | Confidentiality / Urgency | Classification fields with UI highlighting |
+| تأیید / رد | Approve / Reject | Recipient outcome that drives the sender's Outbox folders |
 | جانشینی / تفویض اختیار | Delegation | **Delegation Rule** + permission hooks |
 | هامش‌نویسی | Margin notes / endorsements | Thread Print Format (Jinja + `get_pdf`) |
 
