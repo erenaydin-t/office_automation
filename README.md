@@ -5,7 +5,7 @@ An Iranian-style **office automation (اتوماسیون اداری)** applicati
 
 It implements the patterns that local Iranian organizations expect from a
 "دبیرخانه / اتوماسیون اداری" system, while staying decoupled and standards
-compliant so it can be dropped onto any Frappe v15 bench.
+compliant so it can be dropped onto any Frappe v16 bench.
 
 ## Features
 
@@ -31,7 +31,7 @@ compliant so it can be dropped onto any Frappe v15 bench.
   / Overdue) plus shortcuts and link cards.
 - **Fixtures** — the two custom roles are exported as fixtures; standard records
   (DocTypes, Page, Print Format, Workspace, Number Cards) travel as module files.
-- **CI & pre-commit** — GitHub Actions runs `ruff` lint/format + Frappe v15
+- **CI & pre-commit** — GitHub Actions runs `ruff` lint/format + Frappe v16
   tests; `.pre-commit-config.yaml` wires `ruff` and `prettier`.
 
 ## Architecture highlights
@@ -49,7 +49,7 @@ compliant so it can be dropped onto any Frappe v15 bench.
 ## Installation
 
 ```bash
-# on an existing bench (Frappe v15+)
+# on an existing bench (Frappe v16+)
 bench get-app office_automation /path/to/office_automation
 bench --site your-site.local install-app office_automation
 bench --site your-site.local migrate

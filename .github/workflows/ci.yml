@@ -32,11 +32,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        frappe-branch: ["version-15"]
+        frappe-branch: ["version-16"]
 
     services:
       mariadb:
-        image: mariadb:10.6
+        image: mariadb:11.3
         env:
           MARIADB_ROOT_PASSWORD: root
         ports:

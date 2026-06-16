@@ -35,10 +35,47 @@ DEFAULT_ACTION_TYPES = [
 ]
 
 
+WORKSPACE_NAME = "Office Automation"
+WORKSPACE_ICON = "file"
+
+
 def after_install():
 	create_custom_roles()
 	seed_master_data()
+	ensure_desk_workspace()
 	frappe.db.commit()
+
+
+def after_migrate():
+	"""Runs on every `bench migrate` — keeps the desk icon present & visible."""
+	ensure_desk_workspace()
+	frappe.db.commit()
+
+
+def ensure_desk_workspace():
+	"""Guarantee the Office Automation workspace shows on the ERPNext desk.
+
+	The workspace ships as a standard module file and is created automatically on
+	migrate; this defensively unhides it and pins a valid icon so the sidebar
+	entry always appears.
+	"""
+	if not frappe.db.exists("Workspace", WORKSPACE_NAME):
+		# Not yet synced (e.g. very first install ordering) — nothing to fix up.
+		return
+
+	updates = {}
+	current = frappe.db.get_value("Workspace", WORKSPACE_NAME, ["is_hidden", "public", "icon"], as_dict=True)
+	if current.is_hidden:
+		updates["is_hidden"] = 0
+	if not current.public:
+		updates["public"] = 1
+	if not current.icon:
+		updates["icon"] = WORKSPACE_ICON
+
+	if updates:
+		for field, value in updates.items():
+			frappe.db.set_value("Workspace", WORKSPACE_NAME, field, value)
+		frappe.clear_cache()
 
 
 def seed_master_data():

@@ -13,16 +13,16 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "office_automation",
-# 		"logo": "/assets/office_automation/logo.png",
-# 		"title": "Office Automation",
-# 		"route": "/app/inbox",
-# 		"has_permission": "office_automation.api.permissions.has_app_permission",
-# 	}
-# ]
+# Each item in the list will be shown as an app icon on the /apps screen.
+add_to_apps_screen = [
+	{
+		"name": "office_automation",
+		"logo": "/assets/office_automation/images/office_automation_logo.svg",
+		"title": "Office Automation",
+		"route": "/app/office-automation",
+		"has_permission": "office_automation.office_automation.api.permissions.has_app_permission",
+	}
+]
 
 # Includes in <head>
 # ------------------
@@ -64,6 +64,7 @@ jinja = {
 
 # before_install = "office_automation.install.before_install"
 after_install = "office_automation.install.after_install"
+after_migrate = "office_automation.install.after_migrate"
 
 # Permissions
 # -----------
