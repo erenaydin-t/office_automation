@@ -3,6 +3,20 @@
 
 frappe.ui.form.on("Automation Letter", {
 	refresh(frm) {
+		if (frm.doc.docstatus === 0) {
+			// Draft: help the user send the letter to employees on submit.
+			frm.add_custom_button(__("Add Recipient"), () =>
+				office_automation_add_recipient_dialog(frm)
+			);
+			if (!(frm.doc.recipients || []).length) {
+				frm.dashboard.set_headline(
+					__(
+						"Add one or more recipients below, then <b>Submit</b> to send this letter to their Cartable."
+					)
+				);
+			}
+		}
+
 		if (frm.doc.docstatus === 1) {
 			frm.add_custom_button(
 				__("Forward (Erja)"),
@@ -18,6 +32,54 @@ frappe.ui.form.on("Automation Letter", {
 		}
 	},
 });
+
+function office_automation_add_recipient_dialog(frm) {
+	const d = new frappe.ui.Dialog({
+		title: __("Add Recipient"),
+		fields: [
+			{
+				label: __("Recipient (Employee)"),
+				fieldname: "recipient",
+				fieldtype: "Link",
+				options: "User",
+				reqd: 1,
+			},
+			{
+				label: __("Action Type"),
+				fieldname: "action_type",
+				fieldtype: "Link",
+				options: "Action Type",
+			},
+			{
+				label: __("Instruction (هامش‌نویسی)"),
+				fieldname: "instruction",
+				fieldtype: "Small Text",
+			},
+		],
+		primary_action_label: __("Add"),
+		primary_action(values) {
+			const exists = (frm.doc.recipients || []).some((r) => r.recipient === values.recipient);
+			if (exists) {
+				frappe.msgprint(__("{0} is already a recipient.", [values.recipient]));
+				return;
+			}
+			const row = frm.add_child("recipients", {
+				recipient: values.recipient,
+				action_type: values.action_type,
+				instruction: values.instruction,
+			});
+			frm.refresh_field("recipients");
+			frm.dashboard.clear_headline();
+			frappe.show_alert({
+				message: __("Recipient added — Submit to send."),
+				indicator: "blue",
+			});
+			d.hide();
+			return row;
+		},
+	});
+	d.show();
+}
 
 function office_automation_forward_dialog(frm) {
 	const d = new frappe.ui.Dialog({

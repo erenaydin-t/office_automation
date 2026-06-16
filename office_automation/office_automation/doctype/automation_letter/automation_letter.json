@@ -18,6 +18,8 @@
   "status",
   "body_section",
   "body",
+  "recipients_section",
+  "recipients",
   "attachments_section",
   "attachments",
   "archive_section",
@@ -103,6 +105,18 @@
    "fieldtype": "Text Editor",
    "in_global_search": 1,
    "label": "Body"
+  },
+  {
+   "fieldname": "recipients_section",
+   "fieldtype": "Section Break",
+   "label": "Recipients (گیرندگان)"
+  },
+  {
+   "description": "Employees this letter is sent to on submit. Each becomes an item in the recipient's Cartable.",
+   "fieldname": "recipients",
+   "fieldtype": "Table",
+   "label": "Recipients",
+   "options": "Automation Letter Recipient"
   },
   {
    "fieldname": "attachments_section",

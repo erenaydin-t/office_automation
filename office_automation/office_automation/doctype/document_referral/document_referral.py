@@ -172,12 +172,46 @@ def forward_document(
 		if parent_doc.reference_doctype != doc_type or parent_doc.reference_name != doc_name:
 			frappe.throw(_("Parent Referral does not belong to the supplied document."))
 
+	referral = create_referral(
+		reference_doctype=doc_type,
+		reference_name=doc_name,
+		recipient=recipient,
+		sender=sender,
+		instruction=instruction,
+		action_type=action_type,
+		parent_referral=parent_referral,
+	)
+
+	# Acting on a parent referral (forwarding it onward) closes that node.
+	if parent_doc and parent_doc.recipient == sender and parent_doc.status != STATUS_ACTIONED:
+		parent_doc.mark_actioned()
+
+	frappe.db.commit()
+	return referral.name
+
+
+def create_referral(
+	reference_doctype: str,
+	reference_name: str,
+	recipient: str,
+	sender: str | None = None,
+	instruction: str | None = None,
+	action_type: str | None = None,
+	parent_referral: str | None = None,
+	notify: bool = True,
+):
+	"""Create a single Document Referral (the shared building block).
+
+	Used both by ``forward_document`` (Erja) and by Automation Letter's
+	internal "send to recipients" on submit. Inserts the row, nudges the
+	reference document's status, and fans out notifications.
+	"""
 	referral = frappe.get_doc(
 		{
 			"doctype": "Document Referral",
-			"reference_doctype": doc_type,
-			"reference_name": doc_name,
-			"sender": sender,
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+			"sender": sender or frappe.session.user,
 			"recipient": recipient,
 			"action_type": action_type,
 			"instruction": instruction,
@@ -187,18 +221,14 @@ def forward_document(
 	)
 	referral.insert(ignore_permissions=True)
 
-	# Acting on a parent referral (forwarding it onward) closes that node.
-	if parent_doc and parent_doc.recipient == sender and parent_doc.status != STATUS_ACTIONED:
-		parent_doc.mark_actioned()
-
 	# Bubble the reference document into an "In Progress" state if applicable.
-	_touch_reference_status(doc_type, doc_name)
+	_touch_reference_status(reference_doctype, reference_name)
 
 	# Push a bell notification + live cartable refresh to the recipient.
-	notify_recipient(referral)
+	if notify:
+		notify_recipient(referral)
 
-	frappe.db.commit()
-	return referral.name
+	return referral
 
 
 def _reference_title(reference_doctype: str, reference_name: str) -> str:
