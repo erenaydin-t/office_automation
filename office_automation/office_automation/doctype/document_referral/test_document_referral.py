@@ -9,9 +9,38 @@ from office_automation.office_automation.doctype.document_referral.document_refe
 	get_referral_tree,
 )
 
+OA_USER_ROLE = "Office Automation User"
+
+
+def ensure_oa_user(email: str) -> str:
+	"""Create (or fetch) an enabled user holding the Office Automation User role.
+
+	The referral engine requires the *forwarding* user to have read access to the
+	referenced document, which — by design — flows from this role plus being on a
+	referral of the document.
+	"""
+	if not frappe.db.exists("User", email):
+		frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": email,
+				"first_name": email.split("@")[0],
+				"send_welcome_email": 0,
+				"enabled": 1,
+				"roles": [{"role": OA_USER_ROLE}],
+			}
+		).insert(ignore_permissions=True)
+	elif not frappe.db.exists("Has Role", {"parent": email, "role": OA_USER_ROLE}):
+		user = frappe.get_doc("User", email)
+		user.add_roles(OA_USER_ROLE)
+	return email
+
 
 class TestDocumentReferral(FrappeTestCase):
 	def setUp(self):
+		self.user1 = ensure_oa_user("test1@example.com")
+		self.user2 = ensure_oa_user("test2@example.com")
+
 		self.letter = frappe.get_doc(
 			{
 				"doctype": "Automation Letter",
@@ -23,15 +52,19 @@ class TestDocumentReferral(FrappeTestCase):
 		).insert(ignore_permissions=True)
 		self.letter.submit()
 
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
 	def test_forward_and_tree(self):
 		# Administrator -> test1
-		ref1 = forward_document("Automation Letter", self.letter.name, "test1@example.com", "Please review")
-		# test1 -> test2 (child of ref1)
-		frappe.set_user("test1@example.com")
+		ref1 = forward_document("Automation Letter", self.letter.name, self.user1, "Please review")
+
+		# test1 (an Office Automation User who is on ref1) -> test2, as a child of ref1
+		frappe.set_user(self.user1)
 		ref2 = forward_document(
 			"Automation Letter",
 			self.letter.name,
-			"test2@example.com",
+			self.user2,
 			"Please action",
 			parent_referral=ref1,
 		)
@@ -45,3 +78,21 @@ class TestDocumentReferral(FrappeTestCase):
 
 		# Parent should be Actioned because test1 forwarded it onward.
 		self.assertEqual(frappe.db.get_value("Document Referral", ref1, "status"), "Actioned")
+
+	def test_forwarding_user_without_access_is_blocked(self):
+		# A bare user with no role and no referral cannot forward the letter.
+		stranger = "stranger@example.com"
+		if not frappe.db.exists("User", stranger):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": stranger,
+					"first_name": "stranger",
+					"send_welcome_email": 0,
+					"enabled": 1,
+				}
+			).insert(ignore_permissions=True)
+
+		frappe.set_user(stranger)
+		with self.assertRaises(frappe.PermissionError):
+			forward_document("Automation Letter", self.letter.name, self.user1, "No access")

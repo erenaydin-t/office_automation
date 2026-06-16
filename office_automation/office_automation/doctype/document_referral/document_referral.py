@@ -157,7 +157,10 @@ def forward_document(
 	  passing it on.
 	"""
 	if not frappe.has_permission(doc_type, doc=doc_name, ptype="read"):
-		frappe.throw(_("You are not permitted to access {0} {1}.").format(doc_type, doc_name))
+		frappe.throw(
+			_("You are not permitted to access {0} {1}.").format(doc_type, doc_name),
+			frappe.PermissionError,
+		)
 
 	sender = frappe.session.user
 
@@ -324,7 +327,10 @@ def get_referral_tree(doc_type: str, doc_name: str) -> list[dict]:
 	tree is assembled in memory (O(n)) — no recursive SQL.
 	"""
 	if not frappe.has_permission(doc_type, doc=doc_name, ptype="read"):
-		frappe.throw(_("You are not permitted to access {0} {1}.").format(doc_type, doc_name))
+		frappe.throw(
+			_("You are not permitted to access {0} {1}.").format(doc_type, doc_name),
+			frappe.PermissionError,
+		)
 
 	rows = frappe.get_all(
 		"Document Referral",
@@ -368,7 +374,7 @@ def mark_referral_seen(referral: str):
 	if doc.recipient != frappe.session.user and not frappe.has_permission(
 		"Document Referral", doc=doc, ptype="write"
 	):
-		frappe.throw(_("You can only update your own inbox items."))
+		frappe.throw(_("You can only update your own inbox items."), frappe.PermissionError)
 	doc.mark_seen()
 	return doc.status
 
@@ -380,7 +386,7 @@ def mark_referral_actioned(referral: str):
 	if doc.recipient != frappe.session.user and not frappe.has_permission(
 		"Document Referral", doc=doc, ptype="write"
 	):
-		frappe.throw(_("You can only update your own inbox items."))
+		frappe.throw(_("You can only update your own inbox items."), frappe.PermissionError)
 	doc.mark_actioned()
 	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
 	return doc.status
