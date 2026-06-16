@@ -62,6 +62,12 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Verify toolchain versions
+        run: |
+          echo "python3 -> $(python3 --version)"
+          echo "pythonLocation -> $pythonLocation"
+          echo "node -> $(node --version)"
+
       - name: Install system deps
         run: |
           sudo apt-get update
@@ -71,7 +77,11 @@ jobs:
 
       - name: Init bench & site
         run: |
-          bench init --skip-redis-config-generation --frappe-branch ${{ matrix.frappe-branch }} frappe-bench
+          # Pin bench to the setup-python interpreter (Frappe v16 needs 3.14.x)
+          # so it can never fall back to the runner's system python3.
+          bench init --skip-redis-config-generation \
+            --python "$pythonLocation/bin/python3" \
+            --frappe-branch ${{ matrix.frappe-branch }} frappe-bench
           cd frappe-bench
           sed -i 's/watch:/# watch:/g' Procfile
           sed -i 's/schedule:/# schedule:/g' Procfile
