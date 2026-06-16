@@ -1,0 +1,22 @@
+{
+ "creation": "2026-06-16 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Document Referral",
+ "dynamic_filters_json": null,
+ "filters_json": "[[\"Document Referral\", \"is_overdue\", \"=\", 1]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Overdue Referrals",
+ "color": "#e03636",
+ "modified": "2026-06-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Office Automation",
+ "name": "OA Overdue Referrals",
+ "owner": "Administrator",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

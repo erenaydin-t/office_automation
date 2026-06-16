@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "creation": "2026-06-16 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "notification_section",
+  "create_todo",
+  "send_email_notification",
+  "column_break_notify",
+  "realtime_update",
+  "sla_section",
+  "overdue_after_days",
+  "column_break_sla",
+  "notify_on_overdue"
+ ],
+ "fields": [
+  {
+   "fieldname": "notification_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "default": "1",
+   "description": "Create a ToDo assignment for the recipient on each referral.",
+   "fieldname": "create_todo",
+   "fieldtype": "Check",
+   "label": "Create ToDo Assignment"
+  },
+  {
+   "default": "0",
+   "description": "Also send an email to the recipient (requires an outgoing email account).",
+   "fieldname": "send_email_notification",
+   "fieldtype": "Check",
+   "label": "Send Email Notification"
+  },
+  {
+   "fieldname": "column_break_notify",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Push live updates to the Cartable (Inbox) SPA.",
+   "fieldname": "realtime_update",
+   "fieldtype": "Check",
+   "label": "Realtime Inbox Update"
+  },
+  {
+   "fieldname": "sla_section",
+   "fieldtype": "Section Break",
+   "label": "SLA / Overdue"
+  },
+  {
+   "default": "2",
+   "description": "An open referral older than this many days is flagged as overdue.",
+   "fieldname": "overdue_after_days",
+   "fieldtype": "Int",
+   "label": "Overdue After (Days)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_sla",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Send a reminder notification when a referral becomes overdue.",
+   "fieldname": "notify_on_overdue",
+   "fieldtype": "Check",
+   "label": "Notify On Overdue"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Office Automation",
+ "name": "Office Automation Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Office Automation Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

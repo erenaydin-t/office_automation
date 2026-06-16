@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-16 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "attachment",
+  "column_break_dms",
+  "is_archived",
+  "external_reference_doctype",
+  "external_reference_name"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title"
+  },
+  {
+   "columns": 3,
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Attachment"
+  },
+  {
+   "fieldname": "column_break_dms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_archived",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Archived"
+  },
+  {
+   "description": "Decoupled link to an external Document Management System (e.g. Lyra DMS).",
+   "fieldname": "external_reference_doctype",
+   "fieldtype": "Link",
+   "label": "External Reference Doctype",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "external_reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "External Reference Name",
+   "options": "external_reference_doctype"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Office Automation",
+ "name": "Automation Letter Attachment",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

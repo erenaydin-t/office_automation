@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include office_automation *.css
+recursive-include office_automation *.csv
+recursive-include office_automation *.html
+recursive-include office_automation *.ico
+recursive-include office_automation *.js
+recursive-include office_automation *.json
+recursive-include office_automation *.md
+recursive-include office_automation *.png
+recursive-include office_automation *.py
+recursive-include office_automation *.svg
+recursive-include office_automation *.txt
+recursive-exclude office_automation *.pyc
