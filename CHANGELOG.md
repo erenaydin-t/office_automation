@@ -1,0 +1,37 @@
+# Changelog
+
+All notable changes to this project are documented here.
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [0.1.0] - 2026-06-17
+
+First feature release on **Frappe v16** (Python 3.14 · Node 24).
+
+### Added
+- **Core model** — Automation Letter (submittable), Letter Type & Action Type
+  masters, Document Referral (tree-based Erja engine), Delegation Rule.
+- **Internal send** — Recipients (گیرندگان) and CC (رونوشت) tables; submitting a
+  letter delivers a root referral to each recipient's Cartable.
+- **Cartable navigation** — Vue 3 SPA with sidebar folders: Inbox by referral
+  type (Order/Follow-up/Action/Notification/Info), Outbox by state
+  (In Progress/Approved/Rejected), plus Search, YIC, Drafts, Private/Public,
+  Settings — backed by dedicated whitelisted folder APIs.
+- **Classification** — Confidentiality and Urgency, Private flag, with UI
+  highlighting.
+- **Approve / Reject** outcomes that drive the sender's Outbox folders.
+- **Modern UI** — design-token theme (soft shadows, whitespace, light palette),
+  Lucide-style icons, segmented controls, chip/tag inputs, drag-and-drop
+  dropzone, and a New Letter modal with a WYSIWYG body and Vue transitions.
+- **Delegation-aware permissions** via `permission_query_conditions` /
+  `has_permission` hooks.
+- **Notifications & SLA** — bell / ToDo / email / realtime fan-out, overdue
+  daily job, and Office Automation Settings singleton.
+- **Thread printing** — Jinja print format rendering the letter plus the full
+  referral tree (هامش‌نویسی), `get_pdf`-compatible.
+- **Desk integration** — Workspace with number cards + shortcuts, apps-screen
+  icon, auto-created on install/migrate.
+- **DMS readiness** — Dynamic-Link archive fields (e.g. Lyra DMS).
+- **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
+  pre-commit, Persian translations (fa.csv), and a Persian user manual.
+
+[0.1.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.0
