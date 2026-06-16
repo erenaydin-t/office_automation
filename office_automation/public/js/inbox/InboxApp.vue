@@ -1,9 +1,9 @@
 <template>
-	<div class="oa-cartable">
+	<div class="oa-cartable oa-ui">
 		<!-- ---------------- Sidebar ---------------- -->
 		<aside class="oa-sidebar">
-			<button class="btn btn-primary btn-block oa-new-btn" @click="createLetter">
-				<span>＋ {{ __("ایجاد نامه جدید") }}</span>
+			<button class="oa-btn oa-btn-primary oa-new-btn" @click="createLetter">
+				<OaIcon name="plus" :size="16" /> {{ __("ایجاد نامه جدید") }}
 			</button>
 
 			<template v-for="node in folders" :key="node.key">
@@ -15,7 +15,10 @@
 					:class="{ active: activeFolder === node.key, child: node.child }"
 					@click.prevent="selectFolder(node)"
 				>
-					<span class="oa-folder-label">{{ node.label }}</span>
+					<span class="oa-folder-label">
+						<OaIcon v-if="!node.child" :name="folderIcon(node)" :size="16" />
+						{{ node.label }}
+					</span>
 					<span v-if="badge(node) != null" class="oa-count">{{ badge(node) }}</span>
 				</a>
 			</template>
@@ -112,6 +115,12 @@
 				</div>
 			</div>
 		</section>
+
+		<NewLetterForm
+			v-if="showNewLetter"
+			@close="showNewLetter = false"
+			@created="onLetterCreated"
+		/>
 	</div>
 </template>
 
@@ -120,8 +129,22 @@ const __ = window.__ || ((s) => s);
 const API = "office_automation.office_automation.api.inbox.";
 const REF = "office_automation.office_automation.doctype.document_referral.document_referral.";
 
+import OaIcon from "./components/OaIcon.vue";
+import NewLetterForm from "./NewLetterForm.vue";
+
+const SCOPE_ICONS = {
+	inbox: "inbox",
+	outbox: "send",
+	search: "search",
+	yic: "folder",
+	drafts: "file-text",
+	visibility: "eye",
+	settings: "settings",
+};
+
 export default {
 	name: "InboxApp",
+	components: { OaIcon, NewLetterForm },
 	props: { page: { type: Object, default: null } },
 	data() {
 		return {
@@ -129,6 +152,7 @@ export default {
 			search: "",
 			urgencyFilter: "",
 			loading: false,
+			showNewLetter: false,
 			items: [],
 			counts: { inbox: {}, outbox: {}, drafts: 0 },
 			folders: [
@@ -357,7 +381,21 @@ export default {
 			d.show();
 		},
 		createLetter() {
-			frappe.new_doc("Automation Letter");
+			this.showNewLetter = true;
+		},
+		onLetterCreated({ name, refer }) {
+			this.showNewLetter = false;
+			this.refresh();
+			if (refer && name) {
+				this.forward({
+					kind: "letter",
+					reference_doctype: "Automation Letter",
+					reference_name: name,
+				});
+			}
+		},
+		folderIcon(node) {
+			return SCOPE_ICONS[node.scope] || "chevron-right";
 		},
 		cardClass(item) {
 			return {
@@ -399,16 +437,18 @@ export default {
 	align-items: flex-start;
 }
 .oa-sidebar {
-	flex: 0 0 240px;
-	border: 1px solid var(--border-color, #e2e2e2);
-	border-radius: 10px;
-	padding: 10px;
-	background: var(--card-bg, #fff);
+	flex: 0 0 248px;
+	border: 1px solid var(--oa-border, #eceef1);
+	border-radius: 14px;
+	padding: 12px;
+	background: var(--oa-surface, #fff);
+	box-shadow: var(--oa-shadow-sm);
 	position: sticky;
 	top: 12px;
 }
 .oa-new-btn {
-	margin-bottom: 10px;
+	width: 100%;
+	margin-bottom: 12px;
 }
 .oa-group-title {
 	font-size: 11px;
@@ -474,16 +514,22 @@ export default {
 	max-width: 150px;
 }
 .oa-card {
-	border: 1px solid var(--border-color, #e2e2e2);
-	border-radius: 8px;
-	padding: 12px 14px;
-	margin-bottom: 10px;
+	border: 1px solid var(--oa-border, #eceef1);
+	border-radius: 12px;
+	padding: 14px 16px;
+	margin-bottom: 12px;
 	cursor: pointer;
-	background: var(--card-bg, #fff);
-	transition: box-shadow 0.15s ease;
+	background: var(--oa-surface, #fff);
+	box-shadow: var(--oa-shadow-sm);
+	transition: box-shadow 0.15s ease, transform 0.05s ease;
 }
 .oa-card:hover {
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	box-shadow: var(--oa-shadow-md);
+}
+.oa-folder-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 .oa-card.unseen {
 	border-inline-start: 3px solid var(--orange-500, #f59e0b);

@@ -1,0 +1,371 @@
+/* Office Automation — modern UI design tokens & primitives.
+ * Scoped under .oa-ui so it never leaks into the rest of the Frappe desk. */
+
+.oa-ui {
+	--oa-bg: #f7f8fa;
+	--oa-surface: #ffffff;
+	--oa-text: #1f2733;
+	--oa-text-muted: #6b7685;
+	--oa-border: #eceef1;
+	--oa-primary: #2563eb;
+	--oa-primary-weak: #eff4ff;
+	--oa-primary-text: #1d4ed8;
+	--oa-success: #16a34a;
+	--oa-danger: #dc2626;
+	--oa-warn: #d97706;
+
+	--oa-radius: 12px;
+	--oa-radius-sm: 8px;
+	--oa-gap: 20px;
+
+	--oa-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.05);
+	--oa-shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.05);
+	--oa-shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.16);
+
+	--oa-font: "Inter", "Vazirmatn", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+	font-family: var(--oa-font);
+	color: var(--oa-text);
+}
+
+/* ---------- Typography ---------- */
+.oa-ui h1,
+.oa-ui h2,
+.oa-ui h3,
+.oa-ui h4 {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	margin: 0;
+}
+.oa-ui .oa-label {
+	display: block;
+	font-size: 12.5px;
+	font-weight: 500;
+	color: var(--oa-text-muted);
+	margin-bottom: 8px;
+}
+.oa-ui .oa-help {
+	font-size: 11.5px;
+	color: var(--oa-text-muted);
+	margin-top: 6px;
+}
+
+/* ---------- Cards / sections ---------- */
+.oa-ui .oa-card-surface {
+	background: var(--oa-surface);
+	border: 1px solid var(--oa-border);
+	border-radius: var(--oa-radius);
+	box-shadow: var(--oa-shadow-sm);
+}
+.oa-ui .oa-section {
+	background: var(--oa-surface);
+	border-radius: var(--oa-radius);
+	box-shadow: var(--oa-shadow-sm);
+	padding: 24px;
+	margin-bottom: var(--oa-gap);
+}
+.oa-ui .oa-section-title {
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 18px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* ---------- Inputs ---------- */
+.oa-ui .oa-input,
+.oa-ui .oa-textarea,
+.oa-ui .oa-select {
+	width: 100%;
+	border: 1px solid var(--oa-border);
+	background: var(--oa-surface);
+	border-radius: var(--oa-radius-sm);
+	padding: 10px 12px;
+	font-size: 13.5px;
+	color: var(--oa-text);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	outline: none;
+}
+.oa-ui .oa-input:focus,
+.oa-ui .oa-textarea:focus,
+.oa-ui .oa-select:focus {
+	border-color: var(--oa-primary);
+	box-shadow: 0 0 0 3px var(--oa-primary-weak);
+}
+.oa-ui .oa-textarea {
+	resize: vertical;
+	min-height: 90px;
+}
+
+/* ---------- Buttons ---------- */
+.oa-ui .oa-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	border: 1px solid transparent;
+	border-radius: var(--oa-radius-sm);
+	padding: 9px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+	background: transparent;
+	color: var(--oa-text);
+}
+.oa-ui .oa-btn:active {
+	transform: translateY(1px);
+}
+.oa-ui .oa-btn-primary {
+	background: var(--oa-primary);
+	color: #fff;
+	box-shadow: var(--oa-shadow-sm);
+}
+.oa-ui .oa-btn-primary:hover {
+	background: #1d4ed8;
+}
+.oa-ui .oa-btn-ghost {
+	border-color: var(--oa-border);
+	background: var(--oa-surface);
+}
+.oa-ui .oa-btn-ghost:hover {
+	background: var(--oa-bg);
+}
+.oa-ui .oa-btn-subtle:hover {
+	background: var(--oa-bg);
+}
+.oa-ui .oa-btn[disabled] {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+/* ---------- Segmented control ---------- */
+.oa-ui .oa-segmented {
+	display: inline-flex;
+	background: var(--oa-bg);
+	border-radius: 10px;
+	padding: 4px;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+.oa-ui .oa-seg {
+	border: none;
+	background: transparent;
+	border-radius: 8px;
+	padding: 8px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--oa-text-muted);
+	cursor: pointer;
+	transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.oa-ui .oa-seg:hover {
+	color: var(--oa-text);
+}
+.oa-ui .oa-seg.active {
+	background: var(--oa-surface);
+	color: var(--oa-primary-text);
+	box-shadow: var(--oa-shadow-sm);
+}
+.oa-ui .oa-seg.tone-warn.active {
+	color: var(--oa-warn);
+}
+.oa-ui .oa-seg.tone-danger.active {
+	color: var(--oa-danger);
+}
+
+/* ---------- Chip / tag input ---------- */
+.oa-ui .oa-chips {
+	position: relative;
+}
+.oa-ui .oa-chips-box {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	min-height: 46px;
+	padding: 8px 10px;
+	border: 1px solid var(--oa-border);
+	border-radius: var(--oa-radius-sm);
+	background: var(--oa-surface);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.oa-ui .oa-chips-box.focused {
+	border-color: var(--oa-primary);
+	box-shadow: 0 0 0 3px var(--oa-primary-weak);
+}
+.oa-ui .oa-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--oa-primary-weak);
+	color: var(--oa-primary-text);
+	border-radius: 999px;
+	padding: 4px 8px 4px 12px;
+	font-size: 12.5px;
+	font-weight: 500;
+}
+.oa-ui .oa-chip-x {
+	display: inline-flex;
+	cursor: pointer;
+	opacity: 0.7;
+	border-radius: 50%;
+}
+.oa-ui .oa-chip-x:hover {
+	opacity: 1;
+}
+.oa-ui .oa-chips-input {
+	flex: 1;
+	min-width: 120px;
+	border: none;
+	outline: none;
+	font-size: 13.5px;
+	background: transparent;
+	color: var(--oa-text);
+}
+.oa-ui .oa-suggest {
+	position: absolute;
+	z-index: 30;
+	left: 0;
+	right: 0;
+	margin-top: 6px;
+	background: var(--oa-surface);
+	border: 1px solid var(--oa-border);
+	border-radius: var(--oa-radius-sm);
+	box-shadow: var(--oa-shadow-md);
+	overflow: hidden;
+	max-height: 240px;
+	overflow-y: auto;
+}
+.oa-ui .oa-suggest-item {
+	padding: 9px 12px;
+	font-size: 13px;
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+}
+.oa-ui .oa-suggest-item:hover,
+.oa-ui .oa-suggest-item.active {
+	background: var(--oa-primary-weak);
+}
+.oa-ui .oa-suggest-item small {
+	color: var(--oa-text-muted);
+}
+
+/* ---------- Dropzone ---------- */
+.oa-ui .oa-dropzone {
+	border: 2px dashed var(--oa-border);
+	border-radius: var(--oa-radius);
+	padding: 32px;
+	text-align: center;
+	color: var(--oa-text-muted);
+	transition: background 0.2s ease, border-color 0.2s ease;
+	cursor: pointer;
+}
+.oa-ui .oa-dropzone:hover {
+	border-color: var(--oa-primary);
+}
+.oa-ui .oa-dropzone.dragging {
+	background: var(--oa-primary-weak);
+	border-color: var(--oa-primary);
+	color: var(--oa-primary-text);
+}
+.oa-ui .oa-file-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--oa-border);
+	border-radius: var(--oa-radius-sm);
+	margin-top: 8px;
+	font-size: 13px;
+}
+
+/* ---------- Modal ---------- */
+.oa-ui.oa-modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(16, 24, 40, 0.45);
+	backdrop-filter: blur(2px);
+	z-index: 1050;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 40px 16px;
+	overflow-y: auto;
+}
+.oa-ui .oa-modal {
+	width: 100%;
+	max-width: 760px;
+	background: var(--oa-bg);
+	border-radius: 16px;
+	box-shadow: var(--oa-shadow-lg);
+	overflow: hidden;
+}
+.oa-ui .oa-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 20px 24px;
+	background: var(--oa-surface);
+	border-bottom: 1px solid var(--oa-border);
+}
+.oa-ui .oa-modal-body {
+	padding: 24px;
+}
+.oa-ui .oa-modal-foot {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding: 16px 24px;
+	background: var(--oa-surface);
+	border-top: 1px solid var(--oa-border);
+	position: sticky;
+	bottom: 0;
+}
+
+/* ---------- Transitions ---------- */
+.oa-fade-enter-active,
+.oa-fade-leave-active {
+	transition: opacity 0.18s ease;
+}
+.oa-fade-enter-from,
+.oa-fade-leave-to {
+	opacity: 0;
+}
+.oa-pop-enter-active {
+	transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.oa-pop-leave-active {
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.oa-pop-enter-from,
+.oa-pop-leave-to {
+	opacity: 0;
+	transform: translateY(8px) scale(0.98);
+}
+.oa-slide-enter-active,
+.oa-slide-leave-active {
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.oa-slide-enter-from,
+.oa-slide-leave-to {
+	opacity: 0;
+	transform: translateY(-4px);
+}
+
+.oa-ui .oa-grid-2 {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--oa-gap);
+}
+@media (max-width: 640px) {
+	.oa-ui .oa-grid-2 {
+		grid-template-columns: 1fr;
+	}
+}

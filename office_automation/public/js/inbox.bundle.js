@@ -7,6 +7,7 @@
 
 import { createApp } from "vue";
 import InboxApp from "./inbox/InboxApp.vue";
+import "./inbox/theme.css";
 
 frappe.provide("office_automation.inbox");
 
