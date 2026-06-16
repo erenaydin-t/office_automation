@@ -7,6 +7,8 @@ It implements the patterns that local Iranian organizations expect from a
 "دبیرخانه / اتوماسیون اداری" system, while staying decoupled and standards
 compliant so it can be dropped onto any Frappe v16 bench.
 
+> 📖 **راهنمای کاربری فارسی:** [docs/user-manual-fa.md](docs/user-manual-fa.md)
+
 ## Features
 
 | Concept (FA) | Concept (EN) | Implementation |
