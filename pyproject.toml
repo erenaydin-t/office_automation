@@ -4,7 +4,7 @@ authors = [
     { name = "Milanpars", email = "aydineren1986@gmail.com" }
 ]
 description = "Iranian-style office automation (Cartable, Erja referrals, delegation, thread printing) for Frappe/ERPNext"
-requires-python = ">=3.12"
+requires-python = ">=3.14,<3.15"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
@@ -23,7 +23,7 @@ name = "office_automation"
 
 [tool.ruff]
 line-length = 110
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
