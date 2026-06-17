@@ -86,6 +86,28 @@ class TestAutomationLetter(FrappeTestCase):
 		self.assertEqual(cc_ref[0].referral_type, "Info")
 		self.assertEqual(cc_ref[0].is_cc, 1)
 
+	def test_oa_user_can_create_letter(self):
+		"""A non-privileged Office Automation User must be able to create a letter
+		(regression: the delegation has_permission hook used to deny new docs)."""
+		from office_automation.office_automation.doctype.document_referral.test_document_referral import (
+			ensure_oa_user,
+		)
+
+		user = ensure_oa_user("test1@example.com")
+		frappe.set_user(user)
+		try:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Automation Letter",
+					"subject": "Created by OA User",
+					"date": frappe.utils.today(),
+					"body": "<p>Hi</p>",
+				}
+			).insert()  # no ignore_permissions — exercises the real permission path
+			self.assertTrue(doc.name)
+		finally:
+			frappe.set_user("Administrator")
+
 	def test_cannot_send_to_self(self):
 		letter = frappe.get_doc(
 			{

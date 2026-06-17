@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.3] - 2026-06-18
+
+### Fixed
+- **Create permission bug:** the delegation `has_permission` hook denied *new*
+  Automation Letters/Referrals (no name/owner/sender yet), so even users with
+  the Office Automation User role got "You need the create permission". Creation
+  and amend now defer to role permissions. Added a regression test.
+
+### Docs
+- Persian manual: added the "create permission" fix (how to grant the role,
+  including a bulk-assign console snippet) and a step-by-step guide to the modern
+  New Letter modal.
+
 ## [0.1.2] - 2026-06-18
 
 ### Fixed
@@ -54,6 +67,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.1.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.3
 [0.1.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.2
 [0.1.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.1
 [0.1.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.0

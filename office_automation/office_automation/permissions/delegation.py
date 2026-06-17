@@ -134,6 +134,12 @@ def has_permission(doc, ptype: str | None = None, user: str | None = None, **kwa
 	if is_privileged(user):
 		return None  # let the standard role permissions apply (full access)
 
+	# Creation/amend is governed by role permissions, not row ownership. A new
+	# document has no name/owner/sender yet, so row-level checks would wrongly
+	# deny it — defer to the role grant instead.
+	if ptype in ("create", "amend") or not getattr(doc, "name", None):
+		return None
+
 	effective = set(get_effective_users(user))
 
 	if doc.doctype == "Document Referral":
