@@ -18,20 +18,21 @@ CUSTOM_ROLES = [
 ]
 
 
+# (Persian name, English note)
 DEFAULT_LETTER_TYPES = [
-	("Incoming", "نامه وارده"),
-	("Outgoing", "نامه صادره"),
-	("Internal", "نامه داخلی"),
-	("Circular", "بخشنامه"),
+	("نامه وارده", "Incoming"),
+	("نامه صادره", "Outgoing"),
+	("نامه داخلی", "Internal"),
+	("بخشنامه", "Circular"),
 ]
 
 DEFAULT_ACTION_TYPES = [
-	("For Review", "جهت بررسی"),
-	("For Action", "جهت اقدام"),
-	("For Information", "جهت اطلاع"),
-	("For Approval", "جهت تأیید"),
-	("Please Follow Up", "پیگیری شود"),
-	("Archive", "بایگانی شود"),
+	("جهت بررسی", "For Review"),
+	("جهت اقدام", "For Action"),
+	("جهت اطلاع", "For Information"),
+	("جهت تأیید", "For Approval"),
+	("پیگیری شود", "Please Follow Up"),
+	("بایگانی شود", "Archive"),
 ]
 
 
