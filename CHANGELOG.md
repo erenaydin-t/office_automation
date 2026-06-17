@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.2] - 2026-06-18
+
+### Fixed
+- Corrected the patch module path in `patches.txt`
+  (`office_automation.patches…`), which caused a `ModuleNotFoundError` during
+  `bench migrate`.
+
+### Changed
+- Full Persian localisation: `fa.csv` now translates every DocType name, field
+  label, Select option, workspace/menu label, role, and action button. With the
+  user/site language set to فارسی, the whole app appears in Persian.
+
 ## [0.1.1] - 2026-06-17
 
 ### Changed
@@ -42,5 +54,6 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.1.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.2
 [0.1.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.1
 [0.1.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.0

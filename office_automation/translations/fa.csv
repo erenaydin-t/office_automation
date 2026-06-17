@@ -1,37 +1,81 @@
+Office Automation,اتوماسیون اداری
+Office Automation Settings,تنظیمات اتوماسیون اداری
 Automation Letter,نامهٔ اداری
 Document Referral,ارجاع سند
+Automation Letter Attachment,پیوست نامه
+Automation Letter Recipient,گیرندهٔ نامه
 Letter Type,نوع نامه
 Action Type,نوع اقدام
 Delegation Rule,قانون جانشینی
-Office Automation,اتوماسیون اداری
-Office Automation Settings,تنظیمات اتوماسیون اداری
+Office Automation Manager,مدیر اتوماسیون اداری
+Office Automation User,کاربر اتوماسیون اداری
 Inbox,کارتابل
-Subject,موضوع
-Letter No,شمارهٔ نامه
-Date,تاریخ
-Sender,فرستنده
-Recipient,گیرنده
-Recipients,گیرندگان
-Recipient (Employee),گیرنده (کارمند)
-Body,متن
+Inbox / کارتابل,کارتابل
+Correspondence,مکاتبات
+Masters,داده‌های پایه
+Access Control,کنترل دسترسی
+Shortcuts,میان‌برها
+Routing,مسیر ارجاع
+Unseen Referrals,ارجاع‌های دیده‌نشده
+Pending Referrals,ارجاع‌های در انتظار
+Overdue Referrals,ارجاع‌های معوق
+Action Type Name,نام نوع اقدام
+Actioned On,تاریخ اتمام
+Amended From,اصلاح‌شده از
+Archive / DMS,بایگانی / DMS
+Archive Doctype,داک‌تایپ بایگانی
+Archive Name,نام بایگانی
+Attachment,پیوست
 Attachments,پیوست‌ها
-Carbon Copy (رونوشت),رونوشت
+Body,متن
 CC,رونوشت
+Carbon Copy (رونوشت),رونوشت
 Classification,طبقه‌بندی
 Confidentiality,محرمانگی
-Urgency,فوریت
-Private,خصوصی
-Status,وضعیت
-Outcome,نتیجه
-Referral Type,نوع ارجاع
+Create ToDo Assignment,ایجاد کار (ToDo)
+Date,تاریخ
+Delegatee,جانشین
+Delegator,واگذارکننده
+Description,توضیحات
+External Reference Doctype,داک‌تایپ مرجع خارجی
+External Reference Name,نام مرجع خارجی
+From Date,از تاریخ
 Instruction (هامش‌نویسی),هامش‌نویسی
-User Instruction / Note,دستور/یادداشت کاربر
+Is Active,فعال
+Is Archived,بایگانی‌شده
+Is CC,رونوشت
+Is Overdue,معوق
+Letter Details,مشخصات نامه
+Letter No,شمارهٔ نامه
+Letter Type Name,نام نوع نامه
+Name,نام
+Notifications,اعلان‌ها
+Notify On Overdue,اعلان هنگام معوق‌شدن
+Outcome,نتیجه
+Overdue After (Days),معوق پس از (روز)
 Parent Referral,ارجاع والد
-Forward (Erja),ارجاع
-Forward,ارجاع
-View Referral Tree,مشاهدهٔ درخت ارجاعات
-Add Recipient,افزودن گیرنده
-Submit & Refer,ثبت و ارجاع
+Private,خصوصی
+Realtime Inbox Update,به‌روزرسانی زندهٔ کارتابل
+Recipient,گیرنده
+Recipient (Employee),گیرنده (کارمند)
+Recipients,گیرندگان
+Recipients (گیرندگان),گیرندگان
+Reference,مرجع
+Reference Document,سند مرجع
+Reference Document Type,نوع سند مرجع
+Referral Type,نوع ارجاع
+SLA / Overdue,سررسید / معوق
+Seen On,تاریخ مشاهده
+Send Email Notification,ارسال اعلان ایمیلی
+Sender,فرستنده
+Series,سری
+Status,وضعیت
+Subject,موضوع
+Title,عنوان
+To Date,تا تاریخ
+Tracking,پیگیری
+Urgency,فوریت
+User Instruction / Note,دستور/یادداشت کاربر
 Order,دستور
 Follow-up,پیگیری
 Action,اقدام
@@ -53,9 +97,15 @@ Registered,ثبت‌شده
 In Progress,در دست اقدام
 Closed,بسته‌شده
 Cancelled,باطل‌شده
-Delegator,واگذارکننده
-Delegatee,جانشین
-From Date,از تاریخ
-To Date,تا تاریخ
-Is Active,فعال
-Is Overdue,معوق
+Forward,ارجاع
+Forward (Erja),ارجاع
+Forward Letter (Erja),ارجاع نامه
+Referral Tree (درخت ارجاعات),درخت ارجاعات
+View Referral Tree,مشاهدهٔ درخت ارجاعات
+Add Recipient,افزودن گیرنده
+Submit & Refer,ثبت و ارجاع
+Actions,عملیات
+Open,بازکردن
+Mark Actioned,اتمام کار
+Instruction / Note (هامش‌نویسی),دستور/یادداشت
+Leave blank to refer directly from the letter.,برای ارجاع مستقیم از نامه، خالی بگذارید.
