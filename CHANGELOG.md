@@ -3,6 +3,14 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.4] - 2026-06-18
+
+### Fixed
+- `persianize_masters` patch crashed on Frappe v16 with
+  `rename_doc() got an unexpected keyword argument 'ignore_permissions'`.
+  Removed the unsupported kwargs; the patch runs as Administrator and the
+  masters allow rename.
+
 ## [0.1.3] - 2026-06-18
 
 ### Fixed
@@ -67,6 +75,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.1.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.4
 [0.1.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.3
 [0.1.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.2
 [0.1.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.1

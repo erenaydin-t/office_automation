@@ -33,7 +33,10 @@ def _rename_all(doctype: str, mapping: dict):
 		if old == new:
 			continue
 		merge = bool(frappe.db.exists(doctype, new))
-		frappe.rename_doc(doctype, old, new, merge=merge, force=True, ignore_permissions=True)
+		# Patches run as Administrator; rename_doc updates all links automatically.
+		# (v16 rename_doc no longer accepts ignore_permissions; the masters set
+		# allow_rename so no `force` is required.)
+		frappe.rename_doc(doctype, old, new, merge=merge)
 
 
 def execute():
