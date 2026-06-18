@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.5] - 2026-06-18
+
+### Added
+- One-time patch `grant_oa_user_role` that grants the **Office Automation User**
+  role to all active System Users, so creating/receiving letters works out of
+  the box. (Remove the role from individual users to restrict access.)
+
+### Note
+- The v0.1.3 create-permission fix only takes effect after a `bench restart`
+  (the web worker must reload the updated permission hook).
+
 ## [0.1.4] - 2026-06-18
 
 ### Fixed
@@ -75,6 +86,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.1.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.5
 [0.1.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.4
 [0.1.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.3
 [0.1.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.2
