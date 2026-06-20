@@ -127,6 +127,9 @@ const LETTER_API = "office_automation.office_automation.api.letter.";
 export default {
 	name: "NewLetterForm",
 	components: { OaIcon, OaSegmented, OaUserChips, OaDropzone },
+	props: {
+		referLetter: { type: Object, default: null },
+	},
 	emits: ["close", "created"],
 	data() {
 		return {

@@ -251,3 +251,16 @@ def get_folder_counts(user: str | None = None) -> dict:
 	drafts = frappe.db.count("Automation Letter", {"docstatus": 0, "owner": ["in", recipients]})
 
 	return {"inbox": inbox, "outbox": outbox, "drafts": drafts}
+
+
+@frappe.whitelist()
+def get_dashboard_stats(user: str | None = None) -> dict:
+	"""Headline numbers for the dashboard cards."""
+	recipients = _recipients_for(user)
+	base = {"recipient": ["in", recipients]}
+
+	unseen = frappe.db.count("Document Referral", {**base, "status": "Unseen"})
+	pending = frappe.db.count("Document Referral", {**base, "status": "Seen"})
+	overdue = frappe.db.count("Document Referral", {**base, "is_overdue": 1, "status": ["in", OPEN_STATUSES]})
+	today = frappe.db.count("Document Referral", {**base, "creation": [">=", frappe.utils.today()]})
+	return {"unseen": unseen, "pending": pending, "overdue": overdue, "today": today}

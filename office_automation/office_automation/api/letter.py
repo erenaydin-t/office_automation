@@ -63,6 +63,52 @@ def create_letter(payload: str, submit: int = 0) -> dict:
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 
 
+@frappe.whitelist()
+def get_letter_detail(name: str) -> dict:
+	"""Full letter payload for the panel's letter view: header, body, attachments
+	and the referral flow (with full names, action and timestamps)."""
+	letter = frappe.get_doc("Automation Letter", name)
+	letter.check_permission("read")
+
+	referrals = frappe.get_all(
+		"Document Referral",
+		filters={"reference_doctype": "Automation Letter", "reference_name": name},
+		fields=[
+			"name",
+			"sender",
+			"recipient",
+			"referral_type",
+			"action_type",
+			"instruction",
+			"status",
+			"outcome",
+			"is_cc",
+			"creation",
+		],
+		order_by="creation asc",
+	)
+	for r in referrals:
+		r["sender_name"] = frappe.utils.get_fullname(r["sender"])
+		r["recipient_name"] = frappe.utils.get_fullname(r["recipient"])
+
+	return {
+		"name": letter.name,
+		"subject": letter.subject,
+		"letter_no": letter.letter_no,
+		"date": letter.date,
+		"sender": letter.sender,
+		"sender_name": frappe.utils.get_fullname(letter.sender),
+		"body": letter.body,
+		"status": letter.status,
+		"letter_type": letter.letter_type,
+		"confidentiality": letter.confidentiality,
+		"urgency": letter.urgency,
+		"is_private": letter.is_private,
+		"attachments": [{"title": a.title, "attachment": a.attachment} for a in letter.attachments],
+		"referrals": referrals,
+	}
+
+
 def _link_file(file_url: str | None, docname: str):
 	if not file_url:
 		return

@@ -12,3 +12,5 @@ __pycache__
 *~
 .ruff_cache
 .pre-commit-cache
+ui/
+*.dc.html

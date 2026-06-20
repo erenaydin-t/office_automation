@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] - 2026-06-20
+
+### Added
+- **Office Automation Panel** — a full RTL Persian SPA matching the approved
+  design: top app bar, right nav drawer, and four screens (Dashboard with
+  greeting + stat cards + quick access + pending list, Cartable with folder
+  rail, Letters list, and a Letter view with the referral-flow timeline,
+  attachments and approve/reject/forward actions) plus the compose modal.
+  Includes light/dark theme toggle, Vazirmatn font and Material Symbols icons.
+- New endpoints `get_dashboard_stats` and `get_letter_detail`.
+- The `/app/inbox` page now mounts this panel (`OaPanel.vue` + `panel.css`).
+
 ## [0.1.6] - 2026-06-20
 
 ### Security
@@ -97,6 +109,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.0
 [0.1.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.6
 [0.1.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.5
 [0.1.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.4
