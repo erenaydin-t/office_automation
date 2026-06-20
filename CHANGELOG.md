@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.6] - 2026-06-20
+
+### Security
+- **Cartable folder endpoints leaked other users' data.** `get_letters_by_visibility`
+  used `frappe.get_all` (no permission filter), exposing every private/confidential
+  letter to any user; it now uses `frappe.get_list` so permission rules apply.
+  `get_outbox_items`, `get_drafts`, and `get_folder_counts` accepted an arbitrary
+  `user` argument with no authorization check — they now route through the guarded
+  `_recipients_for` resolver (matching `get_inbox_items`), rejecting requests for
+  another user's data. Added a regression test.
+
 ## [0.1.5] - 2026-06-18
 
 ### Added
@@ -86,6 +97,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.1.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.6
 [0.1.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.5
 [0.1.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.4
 [0.1.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.3

@@ -118,3 +118,20 @@ class TestDocumentReferral(FrappeTestCase):
 		reject_referral(ref, note="Needs rework")
 		frappe.set_user("Administrator")
 		self.assertEqual(frappe.db.get_value("Document Referral", ref, "outcome"), "Rejected")
+
+	def test_cannot_read_another_users_cartable(self):
+		"""Folder endpoints must reject requests for another user's data."""
+		from office_automation.office_automation.api.inbox import (
+			get_drafts,
+			get_folder_counts,
+			get_outbox_items,
+		)
+
+		ensure_oa_user(self.user1)
+		frappe.set_user(self.user1)
+		try:
+			for call in (get_outbox_items, get_drafts, get_folder_counts):
+				with self.assertRaises(frappe.PermissionError):
+					call(user="Administrator")
+		finally:
+			frappe.set_user("Administrator")

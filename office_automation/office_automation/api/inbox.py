@@ -142,8 +142,7 @@ def get_yic_items(user: str | None = None) -> list[dict]:
 @frappe.whitelist()
 def get_outbox_items(user: str | None = None, state: str = "all") -> list[dict]:
 	"""Referrals sent by the user. ``state``: all | in_progress | approved | rejected."""
-	user = user or frappe.session.user
-	senders = get_effective_users(user) if user == frappe.session.user else [user]
+	senders = _recipients_for(user)
 	filters = {"sender": ["in", senders]}
 
 	if state == "in_progress":
@@ -169,8 +168,7 @@ def get_outbox_items(user: str | None = None, state: str = "all") -> list[dict]:
 @frappe.whitelist()
 def get_drafts(user: str | None = None) -> list[dict]:
 	"""Unsubmitted letters owned by the user (docstatus == 0)."""
-	user = user or frappe.session.user
-	owners = get_effective_users(user) if user == frappe.session.user else [user]
+	owners = _recipients_for(user)
 	return frappe.get_all(
 		"Automation Letter",
 		filters={"docstatus": 0, "owner": ["in", owners]},
@@ -192,9 +190,15 @@ def get_drafts(user: str | None = None) -> list[dict]:
 
 @frappe.whitelist()
 def get_letters_by_visibility(visibility: str = "public") -> list[dict]:
-	"""Letters filtered by the private/public flag (permission filters still apply)."""
+	"""Letters filtered by the private/public flag.
+
+	Uses ``frappe.get_list`` (not ``get_all``) so the delegation
+	``permission_query_conditions`` and row-level permissions apply — callers
+	only ever see letters they are entitled to (their own or ones they are a
+	party to). Privileged roles see all.
+	"""
 	is_private = 1 if visibility == "private" else 0
-	return frappe.get_all(
+	return frappe.get_list(
 		"Automation Letter",
 		filters={"is_private": is_private, "docstatus": ["!=", 2]},
 		fields=[
@@ -211,6 +215,7 @@ def get_letters_by_visibility(visibility: str = "public") -> list[dict]:
 			"modified",
 		],
 		order_by="modified desc",
+		limit_page_length=0,
 	)
 
 
@@ -220,8 +225,7 @@ def get_letters_by_visibility(visibility: str = "public") -> list[dict]:
 @frappe.whitelist()
 def get_folder_counts(user: str | None = None) -> dict:
 	"""Badge counts for every sidebar folder."""
-	user = user or frappe.session.user
-	recipients = get_effective_users(user)
+	recipients = _recipients_for(user)
 
 	def inbox_count(referral_type=None):
 		f = {"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]}
