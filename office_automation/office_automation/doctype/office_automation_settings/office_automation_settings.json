@@ -13,9 +13,7 @@
   "sla_section",
   "overdue_after_days",
   "column_break_sla",
-  "notify_on_overdue",
-  "menu_section",
-  "menu_items"
+  "notify_on_overdue"
  ],
  "fields": [
   {
@@ -71,18 +69,6 @@
    "fieldname": "notify_on_overdue",
    "fieldtype": "Check",
    "label": "Notify On Overdue"
-  },
-  {
-   "fieldname": "menu_section",
-   "fieldtype": "Section Break",
-   "label": "Inbox Left Menu"
-  },
-  {
-   "description": "Custom shortcuts shown in the Inbox left menu. Add/remove freely; each needs an icon.",
-   "fieldname": "menu_items",
-   "fieldtype": "Table",
-   "label": "Menu Items",
-   "options": "OA Menu Item"
   }
  ],
  "index_web_pages_for_search": 1,

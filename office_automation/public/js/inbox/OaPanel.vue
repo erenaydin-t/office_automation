@@ -1,11 +1,41 @@
 <template>
 	<div class="oa-panel" :data-theme="theme" dir="rtl" lang="fa"
-		style="position:relative;display:flex;flex-direction:column;min-height:calc(100vh - 110px);background:var(--bg);color:var(--on-surface);border:1px solid var(--outline-soft);border-radius:14px;overflow:hidden">
+		style="position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);color:var(--on-surface);z-index:5">
+
+		<!-- ============ TOP APP BAR ============ -->
+		<header style="height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--outline-soft);box-shadow:var(--elev1);z-index:20">
+			<div style="display:flex;align-items:center;gap:12px;min-width:200px">
+				<div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--primary-strong));display:flex;align-items:center;justify-content:center;box-shadow:var(--elev1)">
+					<span class="ico" style="font-size:22px;color:#fff">mail</span>
+				</div>
+				<div style="display:flex;flex-direction:column;line-height:1.2">
+					<span style="font-size:15px;font-weight:700">اتوماسیون اداری</span>
+					<span style="font-size:11.5px;color:var(--on-faint);font-weight:500">Office Automation</span>
+				</div>
+			</div>
+			<div style="flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:42px;padding:0 14px;background:var(--surface-1);border:1px solid var(--outline-soft);border-radius:12px">
+				<span class="ico" style="font-size:20px;color:var(--on-faint)">search</span>
+				<input v-model="search" placeholder="جستجوی نامه، شماره، فرستنده…" style="flex:1;border:none;outline:none;background:transparent;color:var(--on-surface);font-size:13.5px;font-family:inherit"/>
+			</div>
+			<div style="flex:1"></div>
+			<div style="display:flex;align-items:center;gap:6px">
+				<button @click="toggleTheme" title="حالت روشن/تیره" class="h-surface2" style="width:42px;height:42px;border:none;border-radius:11px;background:var(--surface-1);color:var(--on-variant);cursor:pointer;display:flex;align-items:center;justify-content:center">
+					<span class="ico" style="font-size:21px">{{ theme === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+				</button>
+				<div style="display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border-radius:30px;background:var(--surface-1);cursor:pointer">
+					<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1A56DB,#5B8DEF);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">{{ meInitials }}</div>
+					<div style="display:flex;flex-direction:column;line-height:1.25;padding-left:4px">
+						<span style="font-size:12.5px;font-weight:600">{{ meName }}</span>
+						<span style="font-size:10.5px;color:var(--on-faint)">{{ meRole }}</span>
+					</div>
+				</div>
+			</div>
+		</header>
 
 		<div style="flex:1;display:flex;min-height:0">
 			<!-- ============ NAV DRAWER ============ -->
-			<nav style="width:248px;flex:none;background:var(--surface);border-inline-end:1px solid var(--outline-soft);display:flex;flex-direction:column;padding:16px 14px;gap:4px;overflow:auto">
-				<button @click="goCompose()" class="h-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;height:48px;margin-bottom:12px;border:none;border-radius:14px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--elev2)">
+			<nav style="width:256px;flex:none;background:var(--surface);border-left:1px solid var(--outline-soft);display:flex;flex-direction:column;padding:16px 14px;gap:4px;overflow:auto">
+				<button @click="openCompose()" class="h-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;height:48px;margin-bottom:12px;border:none;border-radius:14px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--elev2)">
 					<span class="ico" style="font-size:21px">edit_square</span>ایجاد نامه جدید
 				</button>
 				<span style="font-size:11px;font-weight:700;color:var(--on-faint);padding:8px 12px 4px">منو</span>
@@ -13,40 +43,84 @@
 					:style="navStyle(m.key)"
 					style="display:flex;align-items:center;gap:13px;height:46px;padding:0 14px;border:none;border-radius:13px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;text-align:right">
 					<span class="ico" style="font-size:22px">{{ m.icon }}</span>{{ m.label }}
-					<span v-if="m.badge" style="margin-inline-start:auto;font-size:11px;font-weight:700;background:#E8533A;color:#fff;border-radius:20px;padding:1px 8px">{{ faNum(m.badge) }}</span>
+					<span v-if="m.badge" style="margin-right:auto;font-size:11px;font-weight:700;background:#E8533A;color:#fff;border-radius:20px;padding:1px 8px">{{ faNum(m.badge) }}</span>
 				</button>
-
-				<!-- Admin-configurable shortcuts (Settings → Menu Items) -->
-				<template v-if="menuItems.length">
-					<span style="font-size:11px;font-weight:700;color:var(--on-faint);padding:14px 12px 4px">میان‌برها</span>
-					<button v-for="(mi,idx) in menuItems" :key="'mi'+idx" @click="openMenuItem(mi)" class="h-surface1" style="display:flex;align-items:center;gap:13px;height:42px;padding:0 14px;border:none;border-radius:13px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:right;background:transparent;color:var(--on-variant)">
-						<span class="ico" style="font-size:21px">{{ mi.icon || 'folder' }}</span>{{ mi.label }}
-					</button>
-				</template>
-
-				<div style="flex:1"></div>
-				<button @click="toggleTheme" class="h-surface1" style="display:flex;align-items:center;gap:13px;height:40px;padding:0 14px;border:none;border-radius:13px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:right;background:transparent;color:var(--on-variant)">
-					<span class="ico" style="font-size:20px">{{ theme === 'dark' ? 'light_mode' : 'dark_mode' }}</span>{{ theme === 'dark' ? 'حالت روشن' : 'حالت تیره' }}
+				<span style="font-size:11px;font-weight:700;color:var(--on-faint);padding:14px 12px 4px">داده‌های پایه</span>
+				<button v-for="m in masters" :key="m.label" @click="m.go()" class="h-surface1" style="display:flex;align-items:center;gap:13px;height:42px;padding:0 14px;border:none;border-radius:13px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:right;background:transparent;color:var(--on-variant)">
+					<span class="ico" style="font-size:21px">{{ m.icon }}</span>{{ m.label }}
 				</button>
 			</nav>
 
 			<!-- ============ MAIN ============ -->
 			<main style="flex:1;overflow:auto;min-width:0">
-				<!-- COMPOSE (single page, no popup) -->
-				<div v-if="view==='compose'" style="max-width:900px;margin:0 auto;padding:18px 24px 48px;animation:oaFade .3s ease">
-					<NewLetterForm @close="view='inbox'" @created="onCreated" />
+				<!-- DASHBOARD -->
+				<div v-if="view==='dashboard'" style="max-width:1180px;margin:0 auto;padding:32px 36px 56px;animation:oaFade .3s ease">
+					<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px">
+						<div>
+							<div style="font-size:13px;color:var(--on-faint);font-weight:600;margin-bottom:4px">{{ todayStr }}</div>
+							<h1 style="margin:0;font-size:26px;font-weight:800;letter-spacing:-.3px">سلام {{ meName }}، خلاصهٔ کارتابل امروز</h1>
+						</div>
+						<button @click="openCompose()" class="h-primary" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 20px;border:none;border-radius:13px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:var(--elev2)">
+							<span class="ico" style="font-size:20px">add</span>نامه جدید
+						</button>
+					</div>
+					<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px">
+						<div v-for="c in statCards" :key="c.label" style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;padding:20px;box-shadow:var(--elev1)">
+							<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+								<span style="font-size:13px;color:var(--on-variant);font-weight:600">{{ c.label }}</span>
+								<div style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center" :style="{background:c.tintBg}"><span class="ico" style="font-size:21px" :style="{color:c.color}">{{ c.icon }}</span></div>
+							</div>
+							<div style="font-size:38px;font-weight:800;line-height:1" :style="{color:c.color}">{{ faNum(c.value) }}</div>
+							<div style="margin-top:10px;font-size:11.5px;color:var(--on-faint)">{{ c.note }}</div>
+						</div>
+					</div>
+
+					<div style="font-size:13px;font-weight:700;color:var(--on-variant);margin-bottom:12px">دسترسی سریع</div>
+					<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">
+						<button v-for="s in shortcuts" :key="s.label" @click="s.go()" class="h-bord" style="display:flex;align-items:center;gap:12px;padding:16px 18px;background:var(--surface);border:1px solid var(--outline-soft);border-radius:15px;cursor:pointer;font-family:inherit;box-shadow:var(--elev1)">
+							<div style="width:40px;height:40px;border-radius:11px;background:var(--primary-container);display:flex;align-items:center;justify-content:center"><span class="ico" style="font-size:22px;color:var(--on-primary-container)">{{ s.icon }}</span></div>
+							<span style="font-size:13.5px;font-weight:700;color:var(--on-surface)">{{ s.label }}</span>
+							<span v-if="s.count!=null" style="margin-right:auto;font-size:11px;font-weight:700;color:var(--on-variant);background:var(--surface-2);border-radius:20px;padding:2px 9px">{{ faNum(s.count) }}</span>
+							<span v-else class="ico" style="margin-right:auto;font-size:18px;color:var(--on-faint)">north_east</span>
+						</button>
+					</div>
+
+					<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
+						<div style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;box-shadow:var(--elev1);overflow:hidden">
+							<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--outline-soft)">
+								<span style="font-size:14.5px;font-weight:700">در انتظار اقدام شما</span>
+								<button @click="goInbox()" style="border:none;background:transparent;color:var(--primary);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">مشاهده همه</button>
+							</div>
+							<div v-if="!pending.length" style="padding:28px;text-align:center;color:var(--on-faint);font-size:13px">موردی نیست.</div>
+							<div v-for="row in pending" :key="row.name" @click="openLetter(row.reference_name)" class="h-surface1" style="display:flex;align-items:center;gap:13px;padding:14px 20px;border-bottom:1px solid var(--outline-soft);cursor:pointer">
+								<div style="width:40px;height:40px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff" :style="{background:avatarColor(row.sender)}">{{ initials(row.sender) }}</div>
+								<div style="min-width:0;flex:1">
+									<div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.reference_title }}</div>
+									<div style="font-size:11.5px;color:var(--on-faint);margin-top:2px">{{ row.sender }}</div>
+								</div>
+								<span style="font-size:11px;font-weight:700;padding:3px 11px;border-radius:20px" :style="refChip(row.referral_type)">{{ faType(row.referral_type) }}</span>
+								<span style="font-size:11px;color:var(--on-faint);white-space:nowrap">{{ shortDate(row.creation) }}</span>
+							</div>
+						</div>
+						<div style="display:flex;flex-direction:column;gap:20px">
+							<div v-for="g in moduleGroups" :key="g.title" style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;box-shadow:var(--elev1);padding:18px 20px">
+								<div style="font-size:13.5px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span class="ico" style="font-size:19px;color:var(--primary)">{{ g.icon }}</span>{{ g.title }}</div>
+								<button v-for="it in g.items" :key="it.label" @click="it.go()" class="h-surface1" style="display:flex;width:100%;align-items:center;gap:10px;padding:9px 8px;border:none;background:transparent;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--on-variant);cursor:pointer;text-align:right"><span class="ico" style="font-size:18px;color:var(--on-faint)">{{ it.icon }}</span>{{ it.label }}<span class="ico" style="margin-right:auto;font-size:16px;color:var(--on-faint)">north_east</span></button>
+							</div>
+						</div>
+					</div>
 				</div>
 
 				<!-- INBOX -->
 				<div v-else-if="view==='inbox'" style="display:flex;height:100%;min-height:0;animation:oaFade .3s ease">
-					<div style="width:248px;flex:none;border-inline-end:1px solid var(--outline-soft);background:var(--surface);overflow:auto;padding:16px 12px">
+					<div style="width:248px;flex:none;border-left:1px solid var(--outline-soft);background:var(--surface);overflow:auto;padding:16px 12px">
 						<div v-for="grp in folderGroups" :key="grp.title" style="margin-bottom:8px">
 							<div style="font-size:11px;font-weight:700;color:var(--on-faint);padding:10px 12px 6px">{{ grp.title }}</div>
 							<button v-for="f in grp.items" :key="f.key" @click="selectFolder(f)" class="h-surface1"
 								:style="folder===f.key ? 'background:var(--primary-container);color:var(--on-primary-container)' : 'background:transparent;color:var(--on-variant)'"
 								style="display:flex;width:100%;align-items:center;gap:11px;height:40px;padding:0 12px;border:none;border-radius:11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:right">
 								<span class="ico" style="font-size:19px">{{ f.icon }}</span>{{ f.label }}
-								<span v-if="f.count" style="margin-inline-start:auto;font-size:11px;font-weight:700">{{ faNum(f.count) }}</span>
+								<span v-if="f.count" style="margin-right:auto;font-size:11px;font-weight:700">{{ faNum(f.count) }}</span>
 							</button>
 						</div>
 					</div>
@@ -61,7 +135,7 @@
 								<span class="ico" style="font-size:19px;color:var(--on-faint)">search</span>
 								<input v-model="search" placeholder="جستجو در کارتابل…" style="flex:1;border:none;outline:none;background:transparent;color:var(--on-surface);font-size:13px;font-family:inherit"/>
 							</div>
-							<button @click="goCompose()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:40px;padding:0 16px;border:none;border-radius:11px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">add</span>نامه جدید</button>
+							<button @click="openCompose()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:40px;padding:0 16px;border:none;border-radius:11px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">add</span>نامه جدید</button>
 						</div>
 						<div style="flex:1;overflow:auto;padding:14px 20px">
 							<div v-if="loading" style="padding:40px;text-align:center;color:var(--on-faint)">در حال بارگذاری…</div>
@@ -185,6 +259,8 @@
 			</main>
 		</div>
 
+		<!-- COMPOSE MODAL -->
+		<NewLetterForm v-if="composeOpen" :refer-letter="composeLetter" @close="composeOpen=false" @created="onCreated" />
 	</div>
 </template>
 
@@ -197,34 +273,25 @@ const REF = "office_automation.office_automation.doctype.document_referral.docum
 const PALETTE = ["#1A56DB", "#7C3AED", "#0E9488", "#DB2777", "#D97706", "#2563EB", "#059669", "#DC2626"];
 const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
 
-// Follow ERPNext's theme: prefer a saved choice, else mirror the desk's
-// data-theme / data-theme-mode (dark/light) so the panel never clashes.
-function detectTheme() {
-	const saved = localStorage.getItem("oa_theme");
-	if (saved) return saved;
-	const root = document.documentElement;
-	const t = root.getAttribute("data-theme") || root.getAttribute("data-theme-mode") || "";
-	return t.includes("dark") ? "dark" : "light";
-}
-
 export default {
 	name: "OaPanel",
 	components: { NewLetterForm },
 	data() {
 		return {
-			theme: detectTheme(),
-			view: "inbox",
+			theme: localStorage.getItem("oa_theme") || "light",
+			view: "dashboard",
 			folder: "inbox:all",
 			scope: "inbox",
 			search: "",
 			loading: false,
 			stats: { unseen: 0, pending: 0, overdue: 0, today: 0 },
 			counts: { inbox: {}, outbox: {}, drafts: 0 },
-			menuItems: [],
 			pending: [],
 			items: [],
 			letters: [],
 			cur: null,
+			composeOpen: false,
+			composeLetter: null,
 			meName: (frappe.user && frappe.user.full_name && frappe.user.full_name()) || frappe.session.user,
 			meEmail: frappe.session.user,
 			meRole: "اتوماسیون اداری",
@@ -243,6 +310,7 @@ export default {
 		},
 		menu() {
 			return [
+				{ key: "dashboard", label: "داشبورد", icon: "space_dashboard", go: () => this.goDashboard() },
 				{ key: "inbox", label: "کارتابل", icon: "inbox", badge: this.stats.unseen, go: () => this.goInbox() },
 				{ key: "letters", label: "نامه‌های اتوماسیون", icon: "description", go: () => this.goLetters() },
 			];
@@ -317,8 +385,7 @@ export default {
 		},
 	},
 	mounted() {
-		this.goInbox();
-		this.loadMenu();
+		this.loadDashboard();
 		this._rt = () => { this.loadCounts(); if (this.view === "inbox") this.loadFolder(); };
 		frappe.realtime.on("oa_inbox_update", this._rt);
 	},
@@ -407,15 +474,14 @@ export default {
 				this.stats = await frappe.xcall(API + "get_dashboard_stats");
 			} catch (e) { /* ignore */ }
 		},
-		async loadMenu() {
-			try { this.menuItems = await frappe.xcall(API + "get_menu_items"); } catch (e) { this.menuItems = []; }
+		async loadDashboard() {
+			await this.loadCounts();
+			try {
+				const all = await frappe.xcall(API + "get_inbox_items", { folder: "all" });
+				this.pending = all.slice(0, 5);
+			} catch (e) { this.pending = []; }
 		},
-		openMenuItem(m) {
-			if (m.link_type === "URL") window.open(m.link_to, "_blank");
-			else if (m.link_type === "Page") frappe.set_route(m.link_to);
-			else if (m.link_type === "Report") frappe.set_route("query-report", m.link_to);
-			else frappe.set_route("List", m.link_to);
-		},
+		goDashboard() { this.view = "dashboard"; this.loadDashboard(); },
 		goInbox() { this.view = "inbox"; this.loadCounts(); this.loadFolder(); },
 		async goLetters() {
 			this.view = "letters";
@@ -459,15 +525,18 @@ export default {
 				frappe.msgprint("امکان باز کردن نامه نبود.");
 			}
 		},
-		goCompose() {
-			this.view = "compose";
+		openCompose(letter) {
+			this.composeLetter = letter || null;
+			this.composeOpen = true;
 		},
 		onCreated(res) {
-			const refer = res && res.refer && res.name;
-			this.view = "inbox";
+			this.composeOpen = false;
+			if (res && res.refer && res.name) {
+				this.forwardDialog("Automation Letter", res.name, null);
+			}
 			this.loadCounts();
-			this.loadFolder();
-			if (refer) this.forwardDialog("Automation Letter", res.name, null);
+			if (this.view === "inbox") this.loadFolder();
+			if (this.view === "dashboard") this.loadDashboard();
 		},
 		async decideCur(kind) {
 			// Act on the current user's open referral for this letter.

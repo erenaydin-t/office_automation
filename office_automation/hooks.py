@@ -28,10 +28,8 @@ add_to_apps_screen = [
 # ------------------
 
 # include js, css files in header of desk.html
-# The CSS is fully scoped to .oa-form/.oa-list (added only on this app's pages
-# by oa_theme.js), so it never affects the rest of ERPNext.
-app_include_css = "/assets/office_automation/css/oa_forms.css"
-app_include_js = "/assets/office_automation/js/oa_theme.js"
+# app_include_css = "/assets/office_automation/css/office_automation.css"
+# app_include_js = "/assets/office_automation/js/office_automation.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/office_automation/css/office_automation.css"

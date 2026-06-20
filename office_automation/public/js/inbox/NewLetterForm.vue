@@ -1,15 +1,17 @@
 <template>
-	<div class="oa-ui oa-compose-page">
-		<div class="oa-compose-card">
-			<header class="oa-modal-head">
-				<h3 style="display: flex; align-items: center; gap: 10px">
-					<OaIcon name="file-text" :size="20" />
-					{{ __("ایجاد نامه جدید") }}
-				</h3>
-				<button class="oa-btn oa-btn-subtle" @click="close" :aria-label="__('بستن')">
-					<OaIcon name="x" :size="18" />
-				</button>
-			</header>
+	<Transition name="oa-fade">
+		<div class="oa-ui oa-modal-backdrop" @click.self="close">
+			<Transition name="oa-pop" appear>
+				<div class="oa-modal" role="dialog" aria-modal="true">
+					<header class="oa-modal-head">
+						<h3 style="display: flex; align-items: center; gap: 10px">
+							<OaIcon name="file-text" :size="20" />
+							{{ __("ایجاد نامه جدید") }}
+						</h3>
+						<button class="oa-btn oa-btn-subtle" @click="close" :aria-label="__('بستن')">
+							<OaIcon name="x" :size="18" />
+						</button>
+					</header>
 
 					<div class="oa-modal-body">
 						<!-- Date + classification -->
@@ -106,9 +108,11 @@
 						<button class="oa-btn oa-btn-primary" :disabled="busy" @click="save(true)">
 							<OaIcon name="send" :size="16" /> {{ __("ثبت") }}
 						</button>
-			</footer>
+					</footer>
+				</div>
+			</Transition>
 		</div>
-	</div>
+	</Transition>
 </template>
 
 <script>
@@ -243,13 +247,6 @@ export default {
 </script>
 
 <style scoped>
-.oa-compose-card {
-	background: var(--oa-surface);
-	border: 1px solid var(--oa-border);
-	border-radius: 16px;
-	box-shadow: var(--oa-shadow-sm);
-	overflow: hidden;
-}
 .oa-body-editor :deep(.ql-container) {
 	border-radius: 0 0 8px 8px;
 }

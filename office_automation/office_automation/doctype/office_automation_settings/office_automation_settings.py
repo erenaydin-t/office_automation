@@ -14,10 +14,7 @@ class OfficeAutomationSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		from office_automation.office_automation.doctype.oa_menu_item.oa_menu_item import OAMenuItem
-
 		create_todo: DF.Check
-		menu_items: DF.Table[OAMenuItem]
 		notify_on_overdue: DF.Check
 		overdue_after_days: DF.Int
 		realtime_update: DF.Check
