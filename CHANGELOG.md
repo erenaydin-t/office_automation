@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.2] - 2026-06-20
+
+### Fixed
+- **Root cause of the recurring "You need the create permission" error.** The
+  `has_permission` hook returned `None` for the create / privileged / new-doc
+  cases. Frappe treats a non-`True` controller-hook result as a denial once the
+  role grant has passed (only `Administrator` short-circuits), so even users with
+  the Office Automation User/Manager **or System Manager** role were blocked from
+  creating letters and referrals. The hook now returns `True` to allow and
+  `False` to deny — never `None`. This also lets privileged role users open
+  letters again.
+
 ## [0.2.1] - 2026-06-20
 
 ### Fixed
@@ -119,6 +131,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.2
 [0.2.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.1
 [0.2.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.0
 [0.1.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.6

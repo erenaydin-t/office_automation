@@ -126,49 +126,49 @@ def automation_letter_query_conditions(user: str | None = None) -> str:
 def has_permission(doc, ptype: str | None = None, user: str | None = None, **kwargs):
 	"""Row-level gate.
 
-	Returns ``True`` to allow (within the role grant), ``False`` to deny, or
-	``None`` to defer to the default role-based decision. Managers/admins defer
-	to roles (``None``) so they keep full access.
+	Returns ``True`` to allow (the document is within the role grant and the user
+	is entitled to this row) or ``False`` to deny. We must never return ``None``:
+	for a registered ``has_permission`` controller hook, Frappe treats a non-True
+	result as a denial once the role grant has passed, so ``None`` would wrongly
+	block legitimate actions (e.g. creating a letter). Returning ``True`` cannot
+	over-grant — Frappe only consults this hook after the role already allows the
+	action — so it simply means "no extra row-level restriction".
 	"""
 	user = user or frappe.session.user
 	if is_privileged(user):
-		return None  # let the standard role permissions apply (full access)
+		return True  # managers/admins: defer fully to their (full) role grant
 
 	# Creation/amend is governed by role permissions, not row ownership. A new
-	# document has no name/owner/sender yet, so row-level checks would wrongly
-	# deny it — defer to the role grant instead.
+	# document has no name/owner/sender yet, so row-level checks cannot apply.
 	if ptype in ("create", "amend") or not getattr(doc, "name", None):
-		return None
+		return True
 
 	effective = set(get_effective_users(user))
 
 	if doc.doctype == "Document Referral":
-		if {doc.recipient, doc.sender, doc.owner} & effective:
-			return True
-		return False
+		return bool({doc.recipient, doc.sender, doc.owner} & effective)
 
 	if doc.doctype == "Automation Letter":
 		if {doc.get("sender"), doc.owner} & effective:
 			return True
 		# Visible if the effective user is on any referral of this letter.
-		if frappe.db.exists(
-			"Document Referral",
-			{
-				"reference_doctype": "Automation Letter",
-				"reference_name": doc.name,
-				"recipient": ["in", list(effective)],
-			},
-		):
-			return True
-		if frappe.db.exists(
-			"Document Referral",
-			{
-				"reference_doctype": "Automation Letter",
-				"reference_name": doc.name,
-				"sender": ["in", list(effective)],
-			},
-		):
-			return True
-		return False
+		return bool(
+			frappe.db.exists(
+				"Document Referral",
+				{
+					"reference_doctype": "Automation Letter",
+					"reference_name": doc.name,
+					"recipient": ["in", list(effective)],
+				},
+			)
+			or frappe.db.exists(
+				"Document Referral",
+				{
+					"reference_doctype": "Automation Letter",
+					"reference_name": doc.name,
+					"sender": ["in", list(effective)],
+				},
+			)
+		)
 
-	return None
+	return True
