@@ -29,12 +29,21 @@ def ensure_oa_user(email: str) -> str:
 				"first_name": email.split("@")[0],
 				"send_welcome_email": 0,
 				"enabled": 1,
+				# Must be a System User for desk DocType permissions to apply.
+				"user_type": "System User",
 				"roles": [{"role": OA_USER_ROLE}],
 			}
 		).insert(ignore_permissions=True)
-	elif not frappe.db.exists("Has Role", {"parent": email, "role": OA_USER_ROLE}):
+	else:
 		user = frappe.get_doc("User", email)
-		user.add_roles(OA_USER_ROLE)
+		if user.user_type != "System User":
+			user.user_type = "System User"
+			user.save(ignore_permissions=True)
+		if not frappe.db.exists("Has Role", {"parent": email, "role": OA_USER_ROLE}):
+			user.add_roles(OA_USER_ROLE)
+
+	# Drop cached roles/permissions so the new role takes effect immediately.
+	frappe.clear_cache(user=email)
 	return email
 
 

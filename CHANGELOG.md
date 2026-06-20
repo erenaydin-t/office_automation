@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.1] - 2026-06-20
+
+### Fixed
+- CI test `test_oa_user_can_create_letter` failed because the fixture user was a
+  Website User (desk DocType permissions don't apply). `ensure_oa_user` now
+  creates a **System User** and clears its cache so role permissions take effect.
+
+### CI
+- Cache uv / yarn / pip / npm downloads and enable pip cache to speed up runs.
+
 ## [0.2.0] - 2026-06-20
 
 ### Added
@@ -109,6 +119,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.1
 [0.2.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.0
 [0.1.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.6
 [0.1.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.1.5
