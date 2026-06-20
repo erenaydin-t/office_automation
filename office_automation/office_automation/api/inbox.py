@@ -268,14 +268,9 @@ def get_menu_items() -> list[dict]:
 	if items:
 		return items
 	return [
-		{
-			"label": "نامه‌های اتوماسیون",
-			"icon": "file-text",
-			"link_type": "DocType",
-			"link_to": "Automation Letter",
-		},
-		{"label": "ارجاعات", "icon": "forward", "link_type": "DocType", "link_to": "Document Referral"},
-		{"label": "قانون تفویض", "icon": "users", "link_type": "DocType", "link_to": "Delegation Rule"},
+		{"label": "انواع نامه", "icon": "label", "link_type": "DocType", "link_to": "Letter Type"},
+		{"label": "انواع اقدام", "icon": "bolt", "link_type": "DocType", "link_to": "Action Type"},
+		{"label": "قانون تفویض", "icon": "rule", "link_type": "DocType", "link_to": "Delegation Rule"},
 		{
 			"label": "تنظیمات",
 			"icon": "settings",

@@ -17,17 +17,21 @@ class OAMenuItem(Document):
 		icon: DF.Literal[
 			"inbox",
 			"send",
-			"file-text",
+			"description",
 			"mail",
 			"folder",
-			"users",
+			"group",
 			"settings",
-			"paperclip",
+			"attach_file",
 			"lock",
-			"check-circle",
-			"forward",
-			"eye",
+			"check_circle",
+			"forward_to_inbox",
+			"visibility",
 			"search",
+			"label",
+			"bolt",
+			"rule",
+			"dashboard",
 		]
 		label: DF.Data
 		link_to: DF.Data

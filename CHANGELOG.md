@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.1] - 2026-06-21
+
+### Changed
+- **Restored the polished panel design, now embedded & integrated.** The
+  Office Automation Panel is back (nav drawer, cartable folders, letter view with
+  the referral-flow timeline) but it renders **inside the Frappe page** — it no
+  longer covers the ERPNext navbar/sidebar, follows the desk **theme (light/dark)
+  and RTL/LTR**, and removed the redundant custom top app bar and dashboard stat
+  cards.
+- **New Letter is a single in-panel page (no popup)** — the composer opens as a
+  full page (`view=compose`) instead of a modal.
+- Left menu shows admin-configurable shortcuts (Settings → Menu Items) with
+  Material Symbols icons, alongside the cartable folders.
+
 ## [0.3.0] - 2026-06-21
 
 ### Changed
@@ -152,6 +166,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.3.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.3.1
 [0.3.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.3.0
 [0.2.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.2
 [0.2.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.1

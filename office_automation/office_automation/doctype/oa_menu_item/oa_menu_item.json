@@ -23,12 +23,12 @@
   {
    "columns": 2,
    "default": "folder",
-   "description": "Icon name (outline set).",
+   "description": "Material Symbols icon name.",
    "fieldname": "icon",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Icon",
-   "options": "inbox\nsend\nfile-text\nmail\nfolder\nusers\nsettings\npaperclip\nlock\ncheck-circle\nforward\neye\nsearch"
+   "options": "inbox\nsend\ndescription\nmail\nfolder\ngroup\nsettings\nattach_file\nlock\ncheck_circle\nforward_to_inbox\nvisibility\nsearch\nlabel\nbolt\nrule\ndashboard"
   },
   {
    "columns": 2,
