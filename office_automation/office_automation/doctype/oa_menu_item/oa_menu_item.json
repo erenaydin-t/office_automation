@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-21 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "label",
+  "icon",
+  "link_type",
+  "link_to"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "default": "folder",
+   "description": "Icon name (outline set).",
+   "fieldname": "icon",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Icon",
+   "options": "inbox\nsend\nfile-text\nmail\nfolder\nusers\nsettings\npaperclip\nlock\ncheck-circle\nforward\neye\nsearch"
+  },
+  {
+   "columns": 2,
+   "default": "DocType",
+   "fieldname": "link_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Link Type",
+   "options": "DocType\nPage\nReport\nURL"
+  },
+  {
+   "columns": 3,
+   "description": "DocType name, Page route, Report name, or full URL.",
+   "fieldname": "link_to",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Link To",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-21 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Office Automation",
+ "name": "OA Menu Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

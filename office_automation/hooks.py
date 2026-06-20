@@ -19,7 +19,7 @@ add_to_apps_screen = [
 		"name": "office_automation",
 		"logo": "/assets/office_automation/images/office_automation_logo.svg",
 		"title": "Office Automation",
-		"route": "/app/office-automation",
+		"route": "/app/inbox",
 		"has_permission": "office_automation.office_automation.api.permissions.has_app_permission",
 	}
 ]

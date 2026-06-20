@@ -254,6 +254,38 @@ def get_folder_counts(user: str | None = None) -> dict:
 
 
 @frappe.whitelist()
+def get_menu_items() -> list[dict]:
+	"""Admin-configurable shortcuts for the Inbox left menu.
+
+	Managed in Office Automation Settings → Menu Items. Falls back to a sensible
+	default set when none are configured.
+	"""
+	settings = frappe.get_cached_doc("Office Automation Settings")
+	items = [
+		{"label": m.label, "icon": m.icon or "folder", "link_type": m.link_type, "link_to": m.link_to}
+		for m in (settings.menu_items or [])
+	]
+	if items:
+		return items
+	return [
+		{
+			"label": "نامه‌های اتوماسیون",
+			"icon": "file-text",
+			"link_type": "DocType",
+			"link_to": "Automation Letter",
+		},
+		{"label": "ارجاعات", "icon": "forward", "link_type": "DocType", "link_to": "Document Referral"},
+		{"label": "قانون تفویض", "icon": "users", "link_type": "DocType", "link_to": "Delegation Rule"},
+		{
+			"label": "تنظیمات",
+			"icon": "settings",
+			"link_type": "DocType",
+			"link_to": "Office Automation Settings",
+		},
+	]
+
+
+@frappe.whitelist()
 def get_dashboard_stats(user: str | None = None) -> dict:
 	"""Headline numbers for the dashboard cards."""
 	recipients = _recipients_for(user)

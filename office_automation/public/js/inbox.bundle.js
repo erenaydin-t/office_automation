@@ -1,19 +1,18 @@
 // Copyright (c) 2026, Milanpars and contributors
 // For license information, please see license.txt
 //
-// Entry point for the Office Automation Panel (Cartable) Vue 3 SPA. Built by
-// `bench build` into /assets/office_automation/js/inbox.bundle.<hash>.js and
-// loaded on demand by the Frappe Page controller.
+// Entry point for the Cartable (Inbox) Vue 3 SPA. It mounts INSIDE the Frappe
+// page content area (it does not cover the ERPNext navbar/sidebar) so it stays
+// in sync with the desk chrome, theme and RTL/LTR direction.
 
 import { createApp } from "vue";
-import OaPanel from "./inbox/OaPanel.vue";
+import InboxApp from "./inbox/InboxApp.vue";
 import "./inbox/theme.css";
-import "./inbox/panel.css";
 
 frappe.provide("office_automation.inbox");
 
 office_automation.inbox.mount = function (el, props = {}) {
-	const app = createApp(OaPanel, props);
+	const app = createApp(InboxApp, props);
 	app.mount(el);
 	return app;
 };

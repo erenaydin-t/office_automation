@@ -3,6 +3,27 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] - 2026-06-21
+
+### Changed
+- **Inbox is now in-page and ERPNext-native.** Replaced the full-screen panel
+  (which covered the desk navbar/sidebar) with an in-page Cartable that keeps
+  ERPNext's top bar and left sidebar, inherits the desk theme (light/dark) and
+  RTL/LTR direction. Removed the dashboard stat cards.
+- The Office Automation app icon now opens **/app/inbox** directly instead of
+  the Workspace.
+- **New Letter is a single full page (no popup)** — opens the standard
+  Automation Letter form; clicking an inbox item opens the document full-page.
+
+### Added
+- **Configurable Inbox left menu.** Admins add/remove shortcuts (each with an
+  icon) in Office Automation Settings → Menu Items (new `OA Menu Item` table),
+  shown in the Inbox left menu. Sensible defaults when none are configured.
+
+### Removed
+- Abandoned full-screen panel and compose-popup components (`OaPanel.vue`,
+  `panel.css`, `NewLetterForm.vue`, segmented/chips/dropzone components).
+
 ## [0.2.2] - 2026-06-20
 
 ### Fixed
@@ -131,6 +152,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.3.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.3.0
 [0.2.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.2
 [0.2.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.1
 [0.2.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.0

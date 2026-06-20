@@ -6,6 +6,23 @@
 				<OaIcon name="plus" :size="16" /> {{ __("ایجاد نامه جدید") }}
 			</button>
 
+			<!-- Admin-configurable shortcuts (Settings → Menu Items) -->
+			<template v-if="menuItems.length">
+				<div class="oa-group-title">{{ __("منو") }}</div>
+				<a
+					v-for="(m, i) in menuItems"
+					:key="'m' + i"
+					href="#"
+					class="oa-folder"
+					@click.prevent="openMenuItem(m)"
+				>
+					<span class="oa-folder-label">
+						<OaIcon :name="m.icon || 'folder'" :size="16" />
+						{{ m.label }}
+					</span>
+				</a>
+			</template>
+
 			<template v-for="node in folders" :key="node.key">
 				<div v-if="node.group" class="oa-group-title">{{ node.label }}</div>
 				<a
@@ -115,12 +132,6 @@
 				</div>
 			</div>
 		</section>
-
-		<NewLetterForm
-			v-if="showNewLetter"
-			@close="showNewLetter = false"
-			@created="onLetterCreated"
-		/>
 	</div>
 </template>
 
@@ -130,7 +141,6 @@ const API = "office_automation.office_automation.api.inbox.";
 const REF = "office_automation.office_automation.doctype.document_referral.document_referral.";
 
 import OaIcon from "./components/OaIcon.vue";
-import NewLetterForm from "./NewLetterForm.vue";
 
 const SCOPE_ICONS = {
 	inbox: "inbox",
@@ -144,7 +154,7 @@ const SCOPE_ICONS = {
 
 export default {
 	name: "InboxApp",
-	components: { OaIcon, NewLetterForm },
+	components: { OaIcon },
 	props: { page: { type: Object, default: null } },
 	data() {
 		return {
@@ -152,7 +162,7 @@ export default {
 			search: "",
 			urgencyFilter: "",
 			loading: false,
-			showNewLetter: false,
+			menuItems: [],
 			items: [],
 			counts: { inbox: {}, outbox: {}, drafts: 0 },
 			folders: [
@@ -213,6 +223,7 @@ export default {
 	},
 	mounted() {
 		this.refresh();
+		this.loadMenu();
 		this._onUpdate = () => this.refresh();
 		frappe.realtime.on("oa_inbox_update", this._onUpdate);
 	},
@@ -315,6 +326,8 @@ export default {
 					/* ignore */
 				}
 			}
+			// Open the underlying document on a full page (no popup).
+			this.openReference(item);
 		},
 		openReference(item) {
 			frappe.set_route("Form", item.reference_doctype, item.reference_name);
@@ -381,17 +394,25 @@ export default {
 			d.show();
 		},
 		createLetter() {
-			this.showNewLetter = true;
+			// Single full page (no popup) — the standard Automation Letter form.
+			frappe.new_doc("Automation Letter");
 		},
-		onLetterCreated({ name, refer }) {
-			this.showNewLetter = false;
-			this.refresh();
-			if (refer && name) {
-				this.forward({
-					kind: "letter",
-					reference_doctype: "Automation Letter",
-					reference_name: name,
-				});
+		async loadMenu() {
+			try {
+				this.menuItems = await frappe.xcall(API + "get_menu_items");
+			} catch (e) {
+				this.menuItems = [];
+			}
+		},
+		openMenuItem(m) {
+			if (m.link_type === "URL") {
+				window.open(m.link_to, "_blank");
+			} else if (m.link_type === "Page") {
+				frappe.set_route(m.link_to);
+			} else if (m.link_type === "Report") {
+				frappe.set_route("query-report", m.link_to);
+			} else {
+				frappe.set_route("List", m.link_to);
 			}
 		},
 		folderIcon(node) {
