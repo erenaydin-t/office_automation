@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.2] - 2026-06-21
+
+### Added
+- **Themed desk pages.** A scoped style (`oa_forms.css`) gives the standard
+  Frappe form and list pages for this app — Automation Letter, Document Referral,
+  Delegation Rule, Letter/Action Type, Office Automation Settings — a modern look
+  (card-style sections, soft shadows, rounded controls, Vazirmatn). It's applied
+  only on the app's pages via `oa_theme.js` (route-aware `.oa-form`/`.oa-list`
+  classes), so the rest of ERPNext is untouched, and it follows light/dark + RTL.
+
 ## [0.3.1] - 2026-06-21
 
 ### Changed
@@ -166,6 +176,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.3.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.3.2
 [0.3.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.3.1
 [0.3.0]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.3.0
 [0.2.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.2
