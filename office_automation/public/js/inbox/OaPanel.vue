@@ -1,6 +1,5 @@
 <template>
-	<div class="oa-panel" :data-theme="theme" dir="rtl" lang="fa"
-		style="position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);color:var(--on-surface);z-index:5">
+	<div class="oa-panel" :data-theme="theme" dir="rtl" lang="fa">
 
 		<!-- ============ TOP APP BAR ============ -->
 		<header style="height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--outline-soft);box-shadow:var(--elev1);z-index:20">

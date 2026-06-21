@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.5] - 2026-06-21
+
+### Changed
+- `.oa-panel` now uses `display: contents` (removed the root's inline
+  `position:fixed`/`display:flex`) so the inbox panel flows within the page
+  instead of as a full-screen overlay.
+
 ## [0.2.4] - 2026-06-21
 
 ### Added
@@ -150,6 +157,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.5
 [0.2.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.4
 [0.2.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.3
 [0.2.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.2

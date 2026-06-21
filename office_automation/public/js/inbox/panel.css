@@ -26,6 +26,7 @@
 	--scrim: rgba(16, 22, 40, 0.42);
 	font-family: "Vazirmatn", sans-serif;
 	color: var(--on-surface);
+	display: contents;
 }
 
 .oa-panel[data-theme="dark"] {
