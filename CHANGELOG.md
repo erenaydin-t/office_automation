@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.6] - 2026-06-21
+
+### Added
+- **Automation Letter (نامه اتوماسیون) desk page** now uses the Office Automation
+  template look (Vazirmatn, card-style sections, soft shadows, rounded controls,
+  blue primary) on both its form and list — scoped to Automation Letter only.
+
 ## [0.2.5] - 2026-06-21
 
 ### Changed
@@ -157,6 +164,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.6
 [0.2.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.5
 [0.2.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.4
 [0.2.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.3
