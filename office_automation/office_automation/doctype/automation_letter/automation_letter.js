@@ -134,6 +134,13 @@ function office_automation_add_recipient_dialog(frm) {
 }
 
 function office_automation_forward_dialog(frm) {
+	const REFERRAL_FA = {
+		دستور: "Order",
+		پیگیری: "Follow-up",
+		اقدام: "Action",
+		استحضار: "Notification",
+		اطلاع: "Info",
+	};
 	const d = new frappe.ui.Dialog({
 		title: __("Forward Letter (Erja)"),
 		fields: [
@@ -145,11 +152,11 @@ function office_automation_forward_dialog(frm) {
 				reqd: 1,
 			},
 			{
-				label: __("Referral Type"),
+				label: __("نوع ارجاع"),
 				fieldname: "referral_type",
 				fieldtype: "Select",
-				options: "Order\nFollow-up\nAction\nNotification\nInfo",
-				default: "Action",
+				options: Object.keys(REFERRAL_FA).join("\n"),
+				default: "اقدام",
 			},
 			{
 				label: __("Action Type"),
@@ -161,6 +168,11 @@ function office_automation_forward_dialog(frm) {
 				label: __("Instruction / Note (هامش‌نویسی)"),
 				fieldname: "instruction",
 				fieldtype: "Small Text",
+			},
+			{
+				label: __("پیوست"),
+				fieldname: "attachment",
+				fieldtype: "Attach",
 			},
 			{
 				label: __("Parent Referral"),
@@ -178,9 +190,10 @@ function office_automation_forward_dialog(frm) {
 					doc_type: frm.doctype,
 					doc_name: frm.docname,
 					recipient: values.recipient,
-					referral_type: values.referral_type,
+					referral_type: REFERRAL_FA[values.referral_type] || "Action",
 					instruction: values.instruction,
 					action_type: values.action_type,
+					attachment: values.attachment,
 					parent_referral: values.parent_referral,
 				},
 				freeze: true,

@@ -23,10 +23,7 @@
 								</div>
 								<div>
 									<label class="oa-label">{{ __("نوع نامه") }}</label>
-									<select v-model="letterType" class="oa-select">
-										<option value="">{{ __("— انتخاب —") }}</option>
-										<option v-for="t in letterTypes" :key="t" :value="t">{{ t }}</option>
-									</select>
+									<OaSegmented v-model="letterType" :options="letterTypeOptions" />
 								</div>
 							</div>
 
@@ -170,6 +167,12 @@ export default {
 				{ value: "Info", label: __("اطلاع") },
 			],
 		};
+	},
+	computed: {
+		// Letter Type as a segmented control (same UX as محرمانگی).
+		letterTypeOptions() {
+			return this.letterTypes.map((t) => ({ value: t, label: t }));
+		},
 	},
 	async mounted() {
 		// Real WYSIWYG: reuse Frappe's Text Editor control.

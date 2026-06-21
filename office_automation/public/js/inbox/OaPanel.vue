@@ -569,16 +569,26 @@ export default {
 			this.forwardDialog("Automation Letter", this.cur.name, mine ? mine.name : null);
 		},
 		forwardDialog(doctype, name, parent) {
+			const FA = { دستور: "Order", پیگیری: "Follow-up", اقدام: "Action", استحضار: "Notification", اطلاع: "Info" };
 			const d = new frappe.ui.Dialog({
 				title: "ارجاع (Erja)",
 				fields: [
 					{ label: "گیرنده", fieldname: "recipient", fieldtype: "Link", options: "User", reqd: 1 },
-					{ label: "نوع ارجاع", fieldname: "referral_type", fieldtype: "Select", options: "Order\nFollow-up\nAction\nNotification\nInfo", default: "Action" },
+					{ label: "نوع ارجاع", fieldname: "referral_type", fieldtype: "Select", options: Object.keys(FA).join("\n"), default: "اقدام" },
 					{ label: "هامش‌نویسی", fieldname: "instruction", fieldtype: "Small Text" },
+					{ label: "پیوست", fieldname: "attachment", fieldtype: "Attach" },
 				],
 				primary_action_label: "ارجاع",
 				primary_action: async (v) => {
-					await frappe.xcall(REF + "forward_document", { doc_type: doctype, doc_name: name, recipient: v.recipient, referral_type: v.referral_type, instruction: v.instruction, parent_referral: parent });
+					await frappe.xcall(REF + "forward_document", {
+						doc_type: doctype,
+						doc_name: name,
+						recipient: v.recipient,
+						referral_type: FA[v.referral_type] || "Action",
+						instruction: v.instruction,
+						attachment: v.attachment,
+						parent_referral: parent,
+					});
 					d.hide();
 					frappe.show_alert({ message: "ارجاع شد", indicator: "green" });
 					if (this.view === "letter") this.openLetter(name); else this.loadFolder();

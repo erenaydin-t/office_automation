@@ -24,6 +24,7 @@
   "recipient",
   "instruction_section",
   "instruction",
+  "attachment",
   "tracking_section",
   "seen_on",
   "is_overdue",
@@ -158,6 +159,12 @@
    "fieldtype": "Small Text",
    "in_global_search": 1,
    "label": "User Instruction / Note"
+  },
+  {
+   "description": "Optional file attached with this referral.",
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
   },
   {
    "collapsible": 1,

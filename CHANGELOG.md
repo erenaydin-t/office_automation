@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.9] - 2026-06-21
+
+### Changed
+- **Erja (forward) dialog**: نوع ارجاع is now a Persian select
+  (دستور/پیگیری/اقدام/استحضار/اطلاع, mapped back to the stored values), and you
+  can **attach a file** with the referral (new `attachment` field on Document
+  Referral).
+- **New Letter form**: نوع نامه is now a segmented control (same UX as محرمانگی)
+  instead of a dropdown.
+
 ## [0.2.8] - 2026-06-21
 
 ### Added
@@ -187,6 +197,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.9]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.9
 [0.2.8]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.8
 [0.2.7]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.7
 [0.2.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.6

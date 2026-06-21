@@ -23,6 +23,7 @@ class DocumentReferral(Document):
 
 		action_type: DF.Link | None
 		actioned_on: DF.Datetime | None
+		attachment: DF.Attach | None
 		instruction: DF.SmallText | None
 		is_cc: DF.Check
 		is_overdue: DF.Check
@@ -152,6 +153,7 @@ def forward_document(
 	instruction: str | None = None,
 	action_type: str | None = None,
 	referral_type: str = "Action",
+	attachment: str | None = None,
 	parent_referral: str | None = None,
 ):
 	"""Forward (Erja) a document to a recipient by creating a Document Referral.
@@ -186,6 +188,7 @@ def forward_document(
 		instruction=instruction,
 		action_type=action_type,
 		referral_type=referral_type,
+		attachment=attachment,
 		parent_referral=parent_referral,
 	)
 
@@ -205,6 +208,7 @@ def create_referral(
 	instruction: str | None = None,
 	action_type: str | None = None,
 	referral_type: str = "Action",
+	attachment: str | None = None,
 	is_cc: bool = False,
 	parent_referral: str | None = None,
 	notify: bool = True,
@@ -226,6 +230,7 @@ def create_referral(
 			"referral_type": referral_type or "Action",
 			"is_cc": 1 if is_cc else 0,
 			"instruction": instruction,
+			"attachment": attachment,
 			"parent_referral": parent_referral,
 			"status": STATUS_UNSEEN,
 			"outcome": "Pending",
