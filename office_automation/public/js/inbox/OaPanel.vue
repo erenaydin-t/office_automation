@@ -2,8 +2,9 @@
 	<div class="oa-panel" :data-theme="theme" dir="rtl" lang="fa">
 
 		<!-- ============ TOP APP BAR ============ -->
-		<header style="height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--outline-soft);box-shadow:var(--elev1);z-index:20">
-			<div style="display:flex;align-items:center;gap:12px;min-width:200px">
+		<header data-r="appbar" style="height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--outline-soft);box-shadow:var(--elev1);z-index:20">
+			<button data-r="burger" @click="drawerOpen=!drawerOpen" class="h-surface1" style="display:none;align-items:center;justify-content:center;width:40px;height:40px;border:none;border-radius:11px;background:var(--surface-1);color:var(--on-variant);cursor:pointer"><span class="ico" style="font-size:22px">menu</span></button>
+			<div data-r="logowrap" style="display:flex;align-items:center;gap:12px;min-width:200px">
 				<div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--primary-strong));display:flex;align-items:center;justify-content:center;box-shadow:var(--elev1)">
 					<span class="ico" style="font-size:22px;color:#fff">mail</span>
 				</div>
@@ -12,7 +13,7 @@
 					<span style="font-size:11.5px;color:var(--on-faint);font-weight:500">Office Automation</span>
 				</div>
 			</div>
-			<div style="flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:42px;padding:0 14px;background:var(--surface-1);border:1px solid var(--outline-soft);border-radius:12px">
+			<div data-r="topsearch" style="flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:42px;padding:0 14px;background:var(--surface-1);border:1px solid var(--outline-soft);border-radius:12px">
 				<span class="ico" style="font-size:20px;color:var(--on-faint)">search</span>
 				<input v-model="search" placeholder="جستجوی نامه، شماره، فرستنده…" style="flex:1;border:none;outline:none;background:transparent;color:var(--on-surface);font-size:13.5px;font-family:inherit"/>
 			</div>
@@ -21,9 +22,9 @@
 				<button @click="toggleTheme" title="حالت روشن/تیره" class="h-surface2" style="width:42px;height:42px;border:none;border-radius:11px;background:var(--surface-1);color:var(--on-variant);cursor:pointer;display:flex;align-items:center;justify-content:center">
 					<span class="ico" style="font-size:21px">{{ theme === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
 				</button>
-				<div style="display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border-radius:30px;background:var(--surface-1);cursor:pointer">
+				<div data-r="profchip" style="display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border-radius:30px;background:var(--surface-1);cursor:pointer">
 					<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1A56DB,#5B8DEF);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">{{ meInitials }}</div>
-					<div style="display:flex;flex-direction:column;line-height:1.25;padding-left:4px">
+					<div data-r="profmeta" style="display:flex;flex-direction:column;line-height:1.25;padding-left:4px">
 						<span style="font-size:12.5px;font-weight:600">{{ meName }}</span>
 						<span style="font-size:10.5px;color:var(--on-faint)">{{ meRole }}</span>
 					</div>
@@ -33,7 +34,7 @@
 
 		<div style="flex:1;display:flex;min-height:0">
 			<!-- ============ NAV DRAWER ============ -->
-			<nav style="width:256px;flex:none;background:var(--surface);border-left:1px solid var(--outline-soft);display:flex;flex-direction:column;padding:16px 14px;gap:4px;overflow:auto">
+			<nav data-r="drawer" :data-open="drawerOpen ? '1' : '0'" style="width:256px;flex:none;background:var(--surface);border-left:1px solid var(--outline-soft);display:flex;flex-direction:column;padding:16px 14px;gap:4px;overflow:auto">
 				<button @click="openCompose()" class="h-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;height:48px;margin-bottom:12px;border:none;border-radius:14px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--elev2)">
 					<span class="ico" style="font-size:21px">edit_square</span>ایجاد نامه جدید
 				</button>
@@ -49,12 +50,13 @@
 					<span class="ico" style="font-size:21px">{{ m.icon }}</span>{{ m.label }}
 				</button>
 			</nav>
+			<div data-r="navscrim" :data-open="drawerOpen ? '1' : '0'" @click="drawerOpen=false" style="display:none;position:fixed;inset:64px 0 0 0;background:var(--scrim);z-index:54"></div>
 
 			<!-- ============ MAIN ============ -->
 			<main style="flex:1;overflow:auto;min-width:0">
 				<!-- DASHBOARD -->
 				<div v-if="view==='dashboard'" style="max-width:1180px;margin:0 auto;padding:32px 36px 56px;animation:oaFade .3s ease">
-					<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px">
+					<div data-r="dashhead" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px">
 						<div>
 							<div style="font-size:13px;color:var(--on-faint);font-weight:600;margin-bottom:4px">{{ todayStr }}</div>
 							<h1 style="margin:0;font-size:26px;font-weight:800;letter-spacing:-.3px">سلام {{ meName }}، خلاصهٔ کارتابل امروز</h1>
@@ -63,7 +65,7 @@
 							<span class="ico" style="font-size:20px">add</span>نامه جدید
 						</button>
 					</div>
-					<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px">
+					<div data-r="grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px">
 						<div v-for="c in statCards" :key="c.label" style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;padding:20px;box-shadow:var(--elev1)">
 							<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
 								<span style="font-size:13px;color:var(--on-variant);font-weight:600">{{ c.label }}</span>
@@ -75,7 +77,7 @@
 					</div>
 
 					<div style="font-size:13px;font-weight:700;color:var(--on-variant);margin-bottom:12px">دسترسی سریع</div>
-					<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">
+					<div data-r="grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">
 						<button v-for="s in shortcuts" :key="s.label" @click="s.go()" class="h-bord" style="display:flex;align-items:center;gap:12px;padding:16px 18px;background:var(--surface);border:1px solid var(--outline-soft);border-radius:15px;cursor:pointer;font-family:inherit;box-shadow:var(--elev1)">
 							<div style="width:40px;height:40px;border-radius:11px;background:var(--primary-container);display:flex;align-items:center;justify-content:center"><span class="ico" style="font-size:22px;color:var(--on-primary-container)">{{ s.icon }}</span></div>
 							<span style="font-size:13.5px;font-weight:700;color:var(--on-surface)">{{ s.label }}</span>
@@ -84,7 +86,7 @@
 						</button>
 					</div>
 
-					<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
+					<div data-r="grid2" style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
 						<div style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;box-shadow:var(--elev1);overflow:hidden">
 							<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--outline-soft)">
 								<span style="font-size:14.5px;font-weight:700">در انتظار اقدام شما</span>
@@ -112,7 +114,7 @@
 
 				<!-- INBOX -->
 				<div v-else-if="view==='inbox'" style="display:flex;height:100%;min-height:0;animation:oaFade .3s ease">
-					<div style="width:248px;flex:none;border-left:1px solid var(--outline-soft);background:var(--surface);overflow:auto;padding:16px 12px">
+					<div data-r="folderpane" style="width:248px;flex:none;border-left:1px solid var(--outline-soft);background:var(--surface);overflow:auto;padding:16px 12px">
 						<div v-for="grp in folderGroups" :key="grp.title" style="margin-bottom:8px">
 							<div style="font-size:11px;font-weight:700;color:var(--on-faint);padding:10px 12px 6px">{{ grp.title }}</div>
 							<button v-for="f in grp.items" :key="f.key" @click="selectFolder(f)" class="h-surface1"
@@ -124,13 +126,13 @@
 						</div>
 					</div>
 					<div style="flex:1;display:flex;flex-direction:column;min-width:0">
-						<div style="display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--outline-soft);background:var(--surface)">
+						<div data-r="inboxhead" style="display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--outline-soft);background:var(--surface)">
 							<div>
 								<div style="font-size:17px;font-weight:800">{{ folderTitle }}</div>
 								<div style="font-size:12px;color:var(--on-faint);margin-top:2px">{{ faNum(filteredItems.length) }} نامه</div>
 							</div>
 							<div style="flex:1"></div>
-							<div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--surface-1);border:1px solid var(--outline-soft);border-radius:11px;width:240px">
+							<div data-r="inboxsearch" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--surface-1);border:1px solid var(--outline-soft);border-radius:11px;width:240px">
 								<span class="ico" style="font-size:19px;color:var(--on-faint)">search</span>
 								<input v-model="search" placeholder="جستجو در کارتابل…" style="flex:1;border:none;outline:none;background:transparent;color:var(--on-surface);font-size:13px;font-family:inherit"/>
 							</div>
@@ -167,7 +169,7 @@
 						<span class="ico" style="font-size:16px">chevron_left</span>
 						<span style="color:var(--on-surface);font-weight:700">نامه‌های اتوماسیون</span>
 					</div>
-					<div style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;box-shadow:var(--elev1);overflow:hidden">
+					<div data-r="dtable" style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;box-shadow:var(--elev1);overflow:hidden">
 						<div style="display:grid;grid-template-columns:38px 2.4fr 1fr .9fr 1fr 1.1fr 48px;align-items:center;padding:0 20px;height:46px;background:var(--surface-1);font-size:12px;font-weight:700;color:var(--on-variant)">
 							<span></span><span>موضوع</span><span>وضعیت</span><span>شماره</span><span>تاریخ</span><span>شناسه</span><span></span>
 						</div>
@@ -194,7 +196,7 @@
 						<div style="flex:1"></div>
 						<span style="font-size:12px;color:var(--on-faint);direction:ltr">{{ cur.name }}</span>
 					</div>
-					<div style="display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start">
+					<div data-r="docgrid" style="display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start">
 						<div style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:20px;box-shadow:var(--elev1);overflow:hidden">
 							<div style="padding:26px 30px 22px;border-bottom:1px solid var(--outline-soft)">
 								<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
@@ -225,7 +227,7 @@
 									</a>
 								</div>
 							</div>
-							<div style="display:flex;gap:10px;padding:18px 30px;border-top:1px solid var(--outline-soft);background:var(--surface-1)">
+							<div data-r="actionbar" style="display:flex;gap:10px;padding:18px 30px;border-top:1px solid var(--outline-soft);background:var(--surface-1)">
 								<button @click="referCur()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:none;border-radius:12px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">forward_to_inbox</span>ارجاع</button>
 								<button @click="decideCur('approve')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(22,163,74,.4);border-radius:12px;background:rgba(22,163,74,.1);color:#16A34A;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">check_circle</span>تأیید</button>
 								<button @click="decideCur('reject')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(220,38,38,.4);border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">cancel</span>رد</button>
@@ -279,6 +281,7 @@ export default {
 		return {
 			theme: localStorage.getItem("oa_theme") || "light",
 			view: "dashboard",
+			drawerOpen: false,
 			folder: "inbox:all",
 			scope: "inbox",
 			search: "",
@@ -295,6 +298,12 @@ export default {
 			meEmail: frappe.session.user,
 			meRole: "اتوماسیون اداری",
 		};
+	},
+	watch: {
+		// On mobile, close the off-canvas drawer after navigating.
+		view() {
+			this.drawerOpen = false;
+		},
 	},
 	computed: {
 		meInitials() {

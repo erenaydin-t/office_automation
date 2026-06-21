@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.8] - 2026-06-21
+
+### Added
+- **Responsive panel** (ported from the `ui/` design). Below 860px: off-canvas
+  nav drawer with a burger toggle + scrim, the top search & profile text hide,
+  the dashboard grids collapse (4→2→1 cols), the inbox folder pane hides,
+  toolbars/headers wrap, the letters table scrolls horizontally, and the letter
+  view goes single-column. Implemented via `data-r` markers + media queries in
+  `panel.css` (scoped to `.oa-panel`).
+
 ## [0.2.7] - 2026-06-21
 
 ### Fixed
@@ -177,6 +187,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.8]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.8
 [0.2.7]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.7
 [0.2.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.6
 [0.2.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.5
