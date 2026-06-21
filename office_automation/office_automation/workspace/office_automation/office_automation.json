@@ -157,5 +157,6 @@
    "type": "DocType"
   }
  ],
- "title": "Office Automation"
+ "title": "Office Automation",
+ "type": "Workspace"
 }

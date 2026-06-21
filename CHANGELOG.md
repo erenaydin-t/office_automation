@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.7] - 2026-06-21
+
+### Fixed
+- **Workspace `type` was null** (now mandatory) — set to `Workspace` so the
+  workspace re-imports without `MandatoryError`.
+- **Inbox redirect moved to the routing layer.** Added `oa_router.js`
+  (app_include_js): when the Office Automation workspace is opened it routes to
+  `/app/inbox` via `frappe.router` (not swallowed like the old in-content-block
+  hack); admins can still open the workspace cards with `?noredirect=1`.
+- Idempotent patch `v0_2.remove_inbox_redirect_hack` deletes the old runtime
+  artifacts (the "OA Inbox Redirect" Custom HTML Block and any redirect content
+  block) from existing sites. Added workspace-routing tests.
+
 ## [0.2.6] - 2026-06-21
 
 ### Added
@@ -164,6 +177,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.7]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.7
 [0.2.6]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.6
 [0.2.5]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.5
 [0.2.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.4
