@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.10] - 2026-06-22
+
+### Fixed
+- **Dark mode gaps.** The composer modal and its components (chips, segmented
+  controls, dropzone) use the `.oa-ui` token set, which had no dark variant, so
+  they stayed light in dark mode. Added a dark token block (applied when the
+  panel is dark) and replaced a few hardcoded light colors in the New Letter
+  form (error box, toggle track) with theme variables.
+
 ## [0.2.9] - 2026-06-21
 
 ### Changed
@@ -197,6 +206,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.10]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.10
 [0.2.9]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.9
 [0.2.8]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.8
 [0.2.7]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.7

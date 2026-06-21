@@ -28,6 +28,28 @@
 	color: var(--oa-text);
 }
 
+/* Dark variant — applied when the panel is in dark mode (the composer modal,
+ * chips, segmented controls and dropzone all use these .oa-ui tokens, so
+ * without this block they'd stay light in dark mode). Also honors .oa-ui
+ * itself carrying data-theme="dark". */
+.oa-panel[data-theme="dark"] .oa-ui,
+.oa-ui[data-theme="dark"] {
+	--oa-bg: #1e222a;
+	--oa-surface: #181b21;
+	--oa-text: #e6e9ef;
+	--oa-text-muted: #a4acba;
+	--oa-border: #2e343f;
+	--oa-primary: #7aa2ff;
+	--oa-primary-weak: #22325c;
+	--oa-primary-text: #cfddff;
+	--oa-success: #34d399;
+	--oa-danger: #f87171;
+	--oa-warn: #fbbf24;
+	--oa-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--oa-shadow-md: 0 3px 10px rgba(0, 0, 0, 0.45);
+	--oa-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
 /* ---------- Typography ---------- */
 .oa-ui h1,
 .oa-ui h2,

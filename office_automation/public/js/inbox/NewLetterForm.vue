@@ -261,8 +261,8 @@ export default {
 	align-items: center;
 	gap: 8px;
 	color: var(--oa-danger);
-	background: #fef2f2;
-	border: 1px solid #fecaca;
+	background: color-mix(in srgb, var(--oa-danger) 12%, var(--oa-surface));
+	border: 1px solid color-mix(in srgb, var(--oa-danger) 35%, var(--oa-surface));
 	border-radius: 8px;
 	padding: 10px 12px;
 	font-size: 13px;
@@ -282,7 +282,7 @@ export default {
 	width: 38px;
 	height: 22px;
 	border-radius: 999px;
-	background: #d4d8de;
+	background: var(--oa-border);
 	position: relative;
 	transition: background 0.18s ease;
 }
