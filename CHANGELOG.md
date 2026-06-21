@@ -3,6 +3,14 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.4] - 2026-06-21
+
+### Added
+- **Delegation Rule desk page** now uses the Office Automation template look
+  (Vazirmatn, card-style sections, soft shadows, rounded controls, blue primary).
+  Applied only to Delegation Rule's form and list via self-contained client
+  scripts — no other ERPNext page is affected, and it follows light/dark + RTL.
+
 ## [0.2.3] - 2026-06-21
 
 ### Reverted
@@ -142,6 +150,7 @@ First feature release on **Frappe v16** (Python 3.14 · Node 24).
 - **Tooling & docs** — fixtures for roles, GitHub Actions CI, ruff + prettier
   pre-commit, Persian translations (fa.csv), and a Persian user manual.
 
+[0.2.4]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.4
 [0.2.3]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.3
 [0.2.2]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.2
 [0.2.1]: https://github.com/erenaydin-t/office_automation/releases/tag/v0.2.1
