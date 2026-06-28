@@ -1,0 +1,32 @@
+/* Self-hosted free Persian fonts (SIL OFL) — Vazirmatn & Shabnam.
+ * Served from the app's public dir at /assets/office_automation/fonts/.
+ * Absolute URLs so esbuild leaves them untouched and they resolve the same in
+ * the editor, the letter read view, and print/PDF. */
+@font-face {
+	font-family: "Vazirmatn";
+	src: url("/assets/office_automation/fonts/Vazirmatn-Regular.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Vazirmatn";
+	src: url("/assets/office_automation/fonts/Vazirmatn-Bold.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Shabnam";
+	src: url("/assets/office_automation/fonts/Shabnam-Regular.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Shabnam";
+	src: url("/assets/office_automation/fonts/Shabnam-Bold.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}

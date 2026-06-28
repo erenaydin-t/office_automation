@@ -9,6 +9,7 @@ import { createApp } from "vue";
 import OaPanel from "./inbox/OaPanel.vue";
 import "./inbox/theme.css";
 import "./inbox/panel.css";
+import "./inbox/oa_fonts.css";
 
 frappe.provide("office_automation.inbox");
 

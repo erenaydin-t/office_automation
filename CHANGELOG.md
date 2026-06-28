@@ -3,6 +3,26 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.1] - 2026-06-28
+
+### Added
+- **Bundled free Persian fonts (Vazirmatn, Shabnam).** Self-hosted the two
+  genuinely-free (SIL OFL) fonts from the editor's list under
+  `public/fonts/` with `@font-face` (`oa_fonts.css`, imported into the SPA
+  bundle), so they render in the editor and the letter read view on every
+  machine — no client install needed.
+
+### Notes
+- The other requested fonts are **not** free to redistribute, so they are not
+  bundled: **IRANSans** (IRANSansWeb requires a fontiran.com license), the
+  **B-series** (B Nazanin/Yekan/Roya/Koodak/Titr/Mitra — © Borna Rayaneh; the
+  "free download" sites are piracy mirrors), and **Tahoma** (Microsoft system
+  font). They remain in the dropdown referenced by name (render where installed).
+  To bundle them legally, provide licensed `woff2`/`ttf` files; or we can add
+  free OFL look-alikes (Sahel, Samim, Tanha, Estedad, …).
+- PDF font embedding (wkhtmltopdf) needs the fonts installed in the image — a
+  separate step from this SPA bundling.
+
 ## [0.3.0] - 2026-06-28
 
 ### Added
