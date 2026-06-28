@@ -228,9 +228,11 @@
 								</div>
 							</div>
 							<div data-r="actionbar" style="display:flex;gap:10px;padding:18px 30px;border-top:1px solid var(--outline-soft);background:var(--surface-1)">
-								<button @click="referCur()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:none;border-radius:12px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">forward_to_inbox</span>ارجاع</button>
-								<button @click="decideCur('approve')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(22,163,74,.4);border-radius:12px;background:rgba(22,163,74,.1);color:#16A34A;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">check_circle</span>تأیید</button>
-								<button @click="decideCur('reject')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(220,38,38,.4);border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">cancel</span>رد</button>
+								<button v-if="cur.status==='Draft' && cur.is_sender" @click="editCur()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:none;border-radius:12px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">edit</span>ویرایش</button>
+								<button v-if="cur.status!=='Draft'" @click="referCur()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:none;border-radius:12px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">forward_to_inbox</span>ارجاع</button>
+								<button v-if="cur.status!=='Draft'" @click="decideCur('approve')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(22,163,74,.4);border-radius:12px;background:rgba(22,163,74,.1);color:#16A34A;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">check_circle</span>تأیید</button>
+								<button v-if="cur.status!=='Draft'" @click="decideCur('reject')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(220,38,38,.4);border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">cancel</span>رد</button>
+								<button v-if="cur.can_recall" @click="recallCur()" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(217,119,6,.45);border-radius:12px;background:rgba(217,119,6,.1);color:#D97706;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">undo</span>بازپس‌گیری</button>
 								<div style="flex:1"></div>
 								<button @click="printLetter(cur.name)" class="h-surface2" style="width:42px;height:42px;border:1px solid var(--outline-soft);border-radius:12px;background:var(--surface);color:var(--on-variant);cursor:pointer"><span class="ico" style="font-size:19px">print</span></button>
 							</div>
@@ -249,10 +251,13 @@
 										<div style="display:flex;align-items:center;gap:6px;margin:6px 0"><span class="ico" style="font-size:14px;color:var(--on-faint)">south</span><span style="font-size:11.5px;font-weight:700;padding:1px 9px;border-radius:20px" :style="refChip(r.referral_type)">{{ faType(r.referral_type) }}</span></div>
 										<div style="font-size:12.5px;font-weight:700;color:var(--on-surface)">{{ r.recipient_name }}</div>
 										<div v-if="r.instruction" style="margin-top:8px;font-size:12px;color:var(--on-variant);background:var(--surface-1);border-radius:10px;padding:8px 11px;line-height:1.7">«{{ r.instruction }}»</div>
-										<div style="font-size:10.5px;color:var(--on-faint);margin-top:6px;direction:ltr;text-align:right">{{ shortDate(r.creation) }}</div>
+										<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+											<span style="font-size:10.5px;color:var(--on-faint);direction:ltr;text-align:right">{{ shortDate(r.creation) }}</span>
+											<button v-if="r.can_recall" @click="recallRef(r)" title="بازپس‌گیری این ارجاع" style="display:flex;align-items:center;gap:4px;height:24px;padding:0 9px;border:1px solid rgba(217,119,6,.4);border-radius:8px;background:rgba(217,119,6,.08);color:#D97706;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:14px">undo</span>بازپس‌گیری</button>
+										</div>
 									</div>
 								</div>
-								<button @click="referCur()" class="h-surface1" style="display:flex;width:100%;align-items:center;justify-content:center;gap:7px;height:40px;border:1px dashed var(--outline);border-radius:12px;background:transparent;color:var(--primary);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:18px">add</span>ارجاع جدید</button>
+								<button v-if="cur.status!=='Draft'" @click="referCur()" class="h-surface1" style="display:flex;width:100%;align-items:center;justify-content:center;gap:7px;height:40px;border:1px dashed var(--outline);border-radius:12px;background:transparent;color:var(--primary);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:18px">add</span>ارجاع جدید</button>
 							</div>
 						</div>
 					</div>
@@ -261,7 +266,7 @@
 		</div>
 
 		<!-- COMPOSE MODAL -->
-		<NewLetterForm v-if="composeOpen" :refer-letter="composeLetter" @close="composeOpen=false" @created="onCreated" />
+		<NewLetterForm v-if="composeOpen" :refer-letter="composeLetter" :edit-letter="editName" @close="closeCompose" @created="onCreated" />
 	</div>
 </template>
 
@@ -294,6 +299,7 @@ export default {
 			cur: null,
 			composeOpen: false,
 			composeLetter: null,
+			editName: null,
 			meName: (frappe.user && frappe.user.full_name && frappe.user.full_name()) || frappe.session.user,
 			meEmail: frappe.session.user,
 			meRole: "اتوماسیون اداری",
@@ -519,6 +525,9 @@ export default {
 			finally { this.loading = false; }
 		},
 		async openItem(L) {
+			// Drafts are editable: open the composer in edit mode instead of the
+			// read-only letter view.
+			if (this.scope === "drafts") { this.openEdit(L.reference_name || L.name); return; }
 			if (this.scope === "inbox" && L.status === "Unseen") {
 				try { await frappe.xcall(REF + "mark_referral_seen", { referral: L.name }); } catch (e) { /* */ }
 			}
@@ -534,17 +543,34 @@ export default {
 			}
 		},
 		openCompose(letter) {
+			this.editName = null;
 			this.composeLetter = letter || null;
 			this.composeOpen = true;
 		},
+		openEdit(name) {
+			this.composeLetter = null;
+			this.editName = name;
+			this.composeOpen = true;
+		},
+		editCur() {
+			if (this.cur) this.openEdit(this.cur.name);
+		},
+		closeCompose() {
+			this.composeOpen = false;
+			this.editName = null;
+			this.composeLetter = null;
+		},
 		onCreated(res) {
 			this.composeOpen = false;
+			this.editName = null;
+			this.composeLetter = null;
 			if (res && res.refer && res.name) {
 				this.forwardDialog("Automation Letter", res.name, null);
 			}
 			this.loadCounts();
-			if (this.view === "inbox") this.loadFolder();
-			if (this.view === "dashboard") this.loadDashboard();
+			if (this.view === "letter" && res && res.name) this.openLetter(res.name);
+			else if (this.view === "inbox") this.loadFolder();
+			else if (this.view === "dashboard") this.loadDashboard();
 		},
 		async decideCur(kind) {
 			// Act on the current user's open referral for this letter.
@@ -567,6 +593,39 @@ export default {
 		referCur() {
 			const mine = (this.cur.referrals || []).find((r) => r.recipient === this.meEmail && ["Unseen", "Seen"].includes(r.status));
 			this.forwardDialog("Automation Letter", this.cur.name, mine ? mine.name : null);
+		},
+		runRecall(confirmMsg, apiMethod, params, successMsg) {
+			// Shared confirm → recall → refresh → error scaffold for both the
+			// whole-letter and per-recipient recall actions.
+			frappe.confirm(confirmMsg, async () => {
+				try {
+					const res = await frappe.xcall(REF + apiMethod, params);
+					frappe.show_alert({ message: successMsg(res), indicator: "orange" });
+					this.loadCounts();
+					this.openLetter(this.cur.name);
+				} catch (e) {
+					frappe.msgprint((e && e.message) || "امکان بازپس‌گیری نبود.");
+				}
+			});
+		},
+		recallCur() {
+			// Sender unsends the letter: pull it back from every recipient who has
+			// not opened it yet. If nobody opened it, the letter returns to Draft.
+			const n = this.cur.unseen_count || 0;
+			const msg = `این نامه از کارتابل ${this.faNum(n)} گیرنده‌ای که هنوز آن را باز نکرده‌اند بازپس گرفته می‌شود. ادامه می‌دهید؟`;
+			this.runRecall(msg, "recall_letter", { reference_name: this.cur.name }, (res) =>
+				res.reverted_to_draft
+					? "نامه بازپس گرفته شد و به پیش‌نویس بازگشت."
+					: `از ${this.faNum(res.recalled)} گیرنده بازپس گرفته شد؛ ${this.faNum(res.kept)} گیرنده قبلاً آن را باز کرده‌اند.`,
+			);
+		},
+		recallRef(r) {
+			this.runRecall(
+				`این ارجاع از کارتابل ${r.recipient_name} بازپس گرفته شود؟`,
+				"recall_referral",
+				{ referral: r.name },
+				() => "بازپس گرفته شد",
+			);
 		},
 		forwardDialog(doctype, name, parent) {
 			const FA = { دستور: "Order", پیگیری: "Follow-up", اقدام: "Action", استحضار: "Notification", اطلاع: "Info" };

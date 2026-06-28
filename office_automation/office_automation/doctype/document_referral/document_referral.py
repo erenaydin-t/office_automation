@@ -53,6 +53,20 @@ class DocumentReferral(Document):
 	def on_update(self):
 		self._sync_tracking_timestamps()
 
+	def on_trash(self):
+		"""Tidy up side artifacts when a referral is removed (e.g. recalled).
+
+		Closes any open ToDo, drops the recipient's bell notifications, and pings
+		their Cartable so the item disappears live. Best-effort — a failed nudge
+		must never block the deletion.
+		"""
+		for cleanup in (_close_todos, _delete_notifications):
+			try:
+				cleanup(self.name)
+			except Exception:
+				frappe.log_error(title="office_automation: referral cleanup on trash failed")
+		_notify_recall(self)
+
 	# ------------------------------------------------------------------ #
 	# Validation helpers
 	# ------------------------------------------------------------------ #
@@ -292,13 +306,7 @@ def notify_recipient(referral):
 			_assign_todo(referral, subject)
 
 		# 3) Realtime cartable refresh (optional).
-		if settings.realtime_update:
-			frappe.publish_realtime(
-				event="oa_inbox_update",
-				message={"referral": referral.name, "subject": subject},
-				user=referral.recipient,
-				after_commit=True,
-			)
+		_publish_inbox_update(referral.recipient, {"referral": referral.name, "subject": subject})
 
 		# 4) Email (optional; requires an outgoing email account).
 		if settings.send_email_notification:
@@ -461,6 +469,151 @@ def reject_referral(referral: str, note: str | None = None):
 	return doc.outcome
 
 
+# ---------------------------------------------------------------------- #
+# Recall (بازپس‌گیری) — sender unsends a letter still unread by recipients
+# ---------------------------------------------------------------------- #
+@frappe.whitelist()
+def recall_letter(reference_name: str, reference_doctype: str = "Automation Letter") -> dict:
+	"""Recall a sent letter by pulling back every still-``Unseen`` referral.
+
+	Only the original sender may recall. Referrals already opened (``Seen`` /
+	``Actioned``) are left untouched. When *no* recipient has opened the letter
+	(all referrals were unseen and are now removed), the letter reverts to an
+	editable ``Draft`` so the sender can amend and re-send it.
+
+	Returns ``{recalled, kept, reverted_to_draft}``.
+	"""
+	letter = frappe.get_doc(reference_doctype, reference_name)
+	_assert_is_sender(letter.get("sender"))
+
+	referrals = frappe.get_all(
+		"Document Referral",
+		filters={"reference_doctype": reference_doctype, "reference_name": reference_name},
+		fields=["name", "status"],
+	)
+	unread = [r["name"] for r in referrals if r["status"] == STATUS_UNSEEN]
+	kept = len(referrals) - len(unread)
+
+	if not unread:
+		frappe.throw(
+			_("This letter cannot be recalled — every recipient has already opened it.")
+		)
+
+	for name in unread:
+		_recall_single(name)
+
+	reverted = _maybe_revert_to_draft(reference_doctype, reference_name)
+	frappe.db.commit()
+	return {"recalled": len(unread), "kept": kept, "reverted_to_draft": reverted}
+
+
+@frappe.whitelist()
+def recall_referral(referral: str) -> dict:
+	"""Recall a single recipient's still-``Unseen`` referral.
+
+	Only the original sender may recall, and only while the recipient has not
+	opened it. If this removes the last referral on the letter, the letter
+	reverts to an editable ``Draft``.
+	"""
+	doc = frappe.get_doc("Document Referral", referral)
+	_assert_is_sender(doc.sender)
+	if doc.status != STATUS_UNSEEN:
+		frappe.throw(_("This item has already been opened and can no longer be recalled."))
+
+	reference_doctype, reference_name = doc.reference_doctype, doc.reference_name
+	_recall_single(referral)
+	reverted = _maybe_revert_to_draft(reference_doctype, reference_name)
+	frappe.db.commit()
+	return {"reverted_to_draft": reverted}
+
+
+def _assert_is_sender(sender: str | None):
+	if sender != frappe.session.user:
+		frappe.throw(
+			_("Only the original sender can recall this letter."), frappe.PermissionError
+		)
+
+
+def _recall_single(referral_name: str):
+	"""Delete one referral; its ``on_trash`` clears ToDos, notifications and
+	refreshes the recipient's Cartable."""
+	frappe.delete_doc("Document Referral", referral_name, ignore_permissions=True, force=True)
+
+
+def _maybe_revert_to_draft(reference_doctype: str, reference_name: str) -> bool:
+	"""Bring a fully-recalled Automation Letter back to an editable Draft.
+
+	Triggered when no referral remains on a submitted letter — i.e. nothing was
+	ever opened, so the send is fully undone. A partial recall (some referrals
+	opened and kept) instead just recomputes the letter's closure state.
+	"""
+	if reference_doctype != "Automation Letter":
+		return False
+
+	remaining = frappe.db.count(
+		"Document Referral",
+		{"reference_doctype": reference_doctype, "reference_name": reference_name},
+	)
+	if remaining:
+		# Partial recall: opened referrals stay, keep the letter active.
+		_maybe_close_reference(reference_doctype, reference_name)
+		return False
+
+	docstatus = frappe.db.get_value(reference_doctype, reference_name, "docstatus")
+	if docstatus != 1:
+		return False
+
+	# Force the submitted letter back to Draft (docstatus 0). Submittable docs
+	# have no native un-submit, and the sender's role lacks cancel/amend, so a
+	# direct db update is the intended escape hatch for a clean unsend.
+	frappe.db.set_value(
+		reference_doctype,
+		reference_name,
+		{"docstatus": 0, "status": "Draft"},
+		update_modified=True,
+	)
+	frappe.clear_document_cache(reference_doctype, reference_name)
+	return True
+
+
+def _delete_notifications(referral_name: str):
+	"""Remove the recipient's bell notifications tied to a (recalled) referral."""
+	logs = frappe.get_all(
+		"Notification Log",
+		filters={"document_type": "Document Referral", "document_name": referral_name},
+		pluck="name",
+	)
+	for name in logs:
+		frappe.delete_doc("Notification Log", name, ignore_permissions=True, force=True)
+
+
+def _publish_inbox_update(user: str, message: dict):
+	"""Fire the realtime Cartable-refresh event for a user when realtime is on.
+
+	Shared by every flow that changes a user's inbox/outbox (new referral,
+	outcome, recall) so the event name + gating live in one place.
+	"""
+	from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
+		get_settings,
+	)
+
+	if get_settings().realtime_update:
+		frappe.publish_realtime(
+			event="oa_inbox_update",
+			message=message,
+			user=user,
+			after_commit=True,
+		)
+
+
+def _notify_recall(referral):
+	"""Best-effort realtime nudge so the recipient's Cartable drops the item."""
+	try:
+		_publish_inbox_update(referral.recipient, {"referral": referral.name, "recalled": True})
+	except Exception:
+		frappe.log_error(title="office_automation: recall notification failed")
+
+
 def _get_own_referral(referral: str):
 	doc = frappe.get_doc("Document Referral", referral)
 	if doc.recipient != frappe.session.user and not frappe.has_permission(
@@ -490,17 +643,7 @@ def _notify_outcome(doc, outcome: str):
 				"from_user": doc.recipient,
 			}
 		).insert(ignore_permissions=True)
-		from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
-			get_settings,
-		)
-
-		if get_settings().realtime_update:
-			frappe.publish_realtime(
-				event="oa_inbox_update",
-				message={"referral": doc.name, "subject": subject, "outcome": outcome},
-				user=doc.sender,
-				after_commit=True,
-			)
+		_publish_inbox_update(doc.sender, {"referral": doc.name, "subject": subject, "outcome": outcome})
 	except Exception:
 		frappe.log_error(title="office_automation: outcome notification failed")
 

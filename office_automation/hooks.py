@@ -11,7 +11,9 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+# This module targets Persian (Jalali) deployments and relies on the
+# persian_calendar app for Jalali display across the desk + print helpers.
+required_apps = ["persian_calendar"]
 
 # Each item in the list will be shown as an app icon on the /apps screen.
 add_to_apps_screen = [

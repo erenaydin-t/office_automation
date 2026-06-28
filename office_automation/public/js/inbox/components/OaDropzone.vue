@@ -49,6 +49,23 @@ export default {
 	data() {
 		return { dragging: false, files: [] };
 	},
+	watch: {
+		// Seed the internal list once when the parent supplies initial files
+		// (edit mode). Guarded so it never clobbers files the user is editing.
+		modelValue: {
+			immediate: true,
+			handler(val) {
+				if (val && val.length && !this.files.length) {
+					this.files = val.map((f) => ({
+						uid: ++uid,
+						name: f.title || f.file_url,
+						uploading: false,
+						file_url: f.file_url,
+					}));
+				}
+			},
+		},
+	},
 	methods: {
 		__,
 		onDrop(e) {
@@ -63,10 +80,12 @@ export default {
 			[...fileList].forEach((file) => {
 				const entry = { uid: ++uid, name: file.name, uploading: true, file_url: null };
 				this.files.push(entry);
-				this.upload(file, entry);
+				// Track by uid and mutate through the reactive array (not this raw
+				// `entry` ref) so status changes actually re-render the row.
+				this.upload(file, entry.uid);
 			});
 		},
-		async upload(file, entry) {
+		async upload(file, fileUid) {
 			try {
 				const form = new FormData();
 				form.append("file", file, file.name);
@@ -77,14 +96,35 @@ export default {
 					headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
 					body: form,
 				});
-				const data = await res.json();
-				entry.file_url = data.message.file_url;
-				entry.uploading = false;
+				const data = await res.json().catch(() => ({}));
+				const fileUrl = data && data.message && data.message.file_url;
+				if (!res.ok || !fileUrl) {
+					throw new Error(this.serverError(data) || __("آپلود ناموفق بود."));
+				}
+				this.patch(fileUid, { file_url: fileUrl, uploading: false });
 				this.sync();
 			} catch (e) {
-				entry.uploading = false;
-				frappe.show_alert({ message: __("آپلود ناموفق: {0}", [entry.name]), indicator: "red" });
+				this.patch(fileUid, { uploading: false });
+				frappe.show_alert({
+					message: (e && e.message) || __("آپلود ناموفق: {0}", [file.name]),
+					indicator: "red",
+				});
 			}
+		},
+		patch(fileUid, changes) {
+			// Look the entry up in the reactive array so the assignment is tracked.
+			const f = this.files.find((x) => x.uid === fileUid);
+			if (f) Object.assign(f, changes);
+		},
+		serverError(data) {
+			// Frappe encodes user-facing errors in _server_messages (JSON of JSON).
+			try {
+				const msgs = JSON.parse((data && data._server_messages) || "[]");
+				if (msgs.length) return JSON.parse(msgs[0]).message;
+			} catch (e) {
+				/* fall through */
+			}
+			return (data && data.exception) || "";
 		},
 		remove(i) {
 			this.files.splice(i, 1);

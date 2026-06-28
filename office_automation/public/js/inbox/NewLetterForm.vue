@@ -6,7 +6,7 @@
 					<header class="oa-modal-head">
 						<h3 style="display: flex; align-items: center; gap: 10px">
 							<OaIcon name="file-text" :size="20" />
-							{{ __("ایجاد نامه جدید") }}
+							{{ isEdit ? __("ویرایش پیش‌نویس") : __("ایجاد نامه جدید") }}
 						</h3>
 						<button class="oa-btn oa-btn-subtle" @click="close" :aria-label="__('بستن')">
 							<OaIcon name="x" :size="18" />
@@ -126,13 +126,17 @@ export default {
 	components: { OaIcon, OaSegmented, OaUserChips, OaDropzone },
 	props: {
 		referLetter: { type: Object, default: null },
+		// Name of an existing draft to edit. When set, the form loads and updates
+		// that letter instead of creating a new one.
+		editLetter: { type: String, default: null },
 	},
 	emits: ["close", "created"],
 	data() {
 		return {
 			dateChoice: "today",
 			date: frappe.datetime.get_today(),
-			letterType: "",
+			// Default letter type for new letters (the seeded Internal type).
+			letterType: "نامه داخلی",
 			letterTypes: [],
 			confidentiality: "Normal",
 			urgency: "Normal",
@@ -173,6 +177,9 @@ export default {
 		letterTypeOptions() {
 			return this.letterTypes.map((t) => ({ value: t, label: t }));
 		},
+		isEdit() {
+			return !!this.editLetter;
+		},
 	},
 	async mounted() {
 		// Real WYSIWYG: reuse Frappe's Text Editor control.
@@ -191,9 +198,46 @@ export default {
 		} catch (e) {
 			/* optional */
 		}
+		if (this.isEdit) await this.loadForEdit();
 	},
 	methods: {
 		__,
+		async loadForEdit() {
+			try {
+				const d = await frappe.xcall(LETTER_API + "get_letter_for_edit", { name: this.editLetter });
+				this.subject = d.subject || "";
+				this.date = d.date || frappe.datetime.get_today();
+				const today = frappe.datetime.get_today();
+				const yesterday = frappe.datetime.add_days(today, -1);
+				this.dateChoice = this.date === yesterday ? "yesterday" : "today";
+				this.letterType = d.letter_type || "";
+				this.confidentiality = d.confidentiality || "Normal";
+				this.urgency = d.urgency || "Normal";
+				this.isPrivate = !!d.is_private;
+				this.recipients = (d.recipients || []).map((r) => ({ value: r.recipient, label: r.recipient_name || r.recipient }));
+				this.referralType = (d.recipients && d.recipients[0] && d.recipients[0].referral_type) || "Action";
+				this.cc = (d.cc || []).map((c) => ({ value: c.recipient, label: c.recipient_name || c.recipient }));
+				this.attachments = (d.attachments || []).map((a) => ({ title: a.title, file_url: a.file_url }));
+				if (this.bodyControl) this.bodyControl.set_value(d.body || "");
+				// Remember per-recipient fields the composer UI can't show, so a save
+				// preserves them instead of clearing action_type/instruction and
+				// flattening differing referral types.
+				this._recipientMeta = {};
+				(d.recipients || []).forEach((r) => {
+					this._recipientMeta[r.recipient] = {
+						referral_type: r.referral_type,
+						action_type: r.action_type,
+						instruction: r.instruction,
+					};
+				});
+				this._initialReferralType = this.referralType;
+			} catch (e) {
+				// Don't leave a blank but editable form open — saving it would wipe
+				// the draft's recipients/attachments. Surface the error and close.
+				frappe.msgprint((e && e.message) || __("بارگذاری پیش‌نویس ناموفق بود."));
+				this.$emit("close");
+			}
+		},
 		syncDate(choice) {
 			this.date =
 				choice === "yesterday"
@@ -223,19 +267,30 @@ export default {
 					confidentiality: this.confidentiality,
 					urgency: this.urgency,
 					is_private: this.isPrivate ? 1 : 0,
-					recipients: this.recipients.map((r) => ({
-						recipient: r.value,
-						referral_type: this.referralType,
-					})),
+					recipients: this.recipients.map((r) => {
+						const meta = this._recipientMeta && this._recipientMeta[r.value];
+						// Keep each recipient's original referral type unless the user
+						// changed the (single) selector; new recipients use the current one.
+						const typeChanged = this.isEdit && this.referralType !== this._initialReferralType;
+						return {
+							recipient: r.value,
+							referral_type: meta && !typeChanged ? meta.referral_type || this.referralType : this.referralType,
+							action_type: meta ? meta.action_type : undefined,
+							instruction: meta ? meta.instruction : undefined,
+						};
+					}),
 					cc: this.cc.map((c) => ({ recipient: c.value })),
 					attachments: this.attachments,
 				};
-				const res = await frappe.xcall(LETTER_API + "create_letter", {
-					payload: JSON.stringify(payload),
-					submit: submit ? 1 : 0,
-				});
+				const args = { payload: JSON.stringify(payload), submit: submit ? 1 : 0 };
+				if (this.isEdit) args.name = this.editLetter;
+				const res = await frappe.xcall(LETTER_API + (this.isEdit ? "update_letter" : "create_letter"), args);
 				frappe.show_alert({
-					message: submit ? __("نامه ثبت و ارسال شد") : __("پیش‌نویس ذخیره شد"),
+					message: submit
+						? __("نامه ثبت و ارسال شد")
+						: this.isEdit
+							? __("پیش‌نویس به‌روزرسانی شد")
+							: __("پیش‌نویس ذخیره شد"),
 					indicator: "green",
 				});
 				this.$emit("created", { name: res.name, refer });

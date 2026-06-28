@@ -3,6 +3,126 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.18] - 2026-06-28
+
+### Fixed
+- **Draft edit could wipe the draft on a load error.** If `get_letter_for_edit`
+  failed, the composer stayed open empty and saving rebuilt the child tables
+  from the blank form; it now surfaces the error and closes instead.
+- **Editing a draft no longer drops per-recipient data.** The composer now
+  round-trips each recipient's `action_type`/`instruction` and keeps their
+  individual `referral_type` (unless the type selector is changed), instead of
+  flattening to one type and clearing the rest.
+- **Recall is no longer rolled back by a cleanup hiccup.** `Document Referral.on_trash`
+  guards the ToDo/notification cleanup so a failure there can't abort the recall
+  transaction (matching its best-effort contract).
+- **Editing an old-dated draft no longer silently resets the date.** `OaSegmented`
+  only emits on a real change, so re-clicking the active date option is a no-op.
+- **Stale default Letter Type can't block letter creation.** `create_letter` /
+  `update_letter` drop a `letter_type` that no longer exists rather than failing
+  Link validation.
+
+### Changed
+- Deduplicated the realtime Cartable-refresh into `_publish_inbox_update()`
+  (was repeated in three notify paths), the two SPA recall handlers into a shared
+  `runRecall()`, and the create/update letter tail into `_finalize_letter()`.
+
+## [0.2.17] - 2026-06-28
+
+### Changed
+- **Jalali auto-enable is now one-time.** The initial migrate enables Jalali and
+  records a global flag (`office_automation_jalali_initialized`); subsequent
+  migrations are a no-op, so an admin who later disables Jalali (or changes week
+  start/end) is no longer overridden on the next `bench migrate`.
+
+## [0.2.16] - 2026-06-28
+
+### Changed
+- **persian_calendar is now a required app.** This module targets Persian
+  (Jalali) deployments, so `persian_calendar` is declared in `required_apps`
+  (installed automatically and migrated before this app).
+- **Jalali calendar auto-enables on migrate.** `after_install` / `after_migrate`
+  now switch **Jalali Settings** on (Default Calendar = Jalali) when it has not
+  been enabled yet, so fresh deployments show Persian dates with no manual step.
+  It only flips a *disabled* setting on — an admin's week start/end tweaks are
+  left untouched. Best-effort and guarded, so migrate never fails over it.
+
+## [0.2.15] - 2026-06-28
+
+### Changed
+- **Persian (Jalali) dates in the Thread print format.** Integrated with the
+  [persian_calendar](https://github.com/sfarbod/persian_calendar_ERPNext)
+  app. Frappe desk list views / forms / reports are converted to Jalali
+  automatically by that app's desk JS once it is enabled, but **print formats
+  are not** (it keeps server-side formatting Gregorian on v16). The Automation
+  Letter Thread print format now renders the letter date and each referral's
+  creation / actioned timestamps via the app's `toshamshi()` Jinja helper with
+  Persian digits. A `toj` shim falls back to the stock Gregorian formatter when
+  persian_calendar is not installed, so the print format still works standalone.
+
+### Notes
+- The Cartable SPA already shows Jalali dates (it formats via
+  `Intl.DateTimeFormat("fa-IR")`); stored dates remain Gregorian. To enable
+  Jalali everywhere else: install + migrate persian_calendar, then in **Jalali
+  Settings** tick *Enable Jalali Calendar* and set *Default Calendar = Jalali*
+  (`bench build` + `clear-cache` + `restart`). See the deploy notes in the PR.
+
+## [0.2.14] - 2026-06-28
+
+### Changed
+- **Default letter type for new letters.** New letters now default to the
+  Internal type «نامه داخلی» (the seeded `Internal` Letter Type). Applied at
+  every entry point: the `letter_type` field default on **Automation Letter**
+  (desk form / `new_doc`), the SPA composer's pre-selected type, and a
+  `create_letter`/`update_letter` fallback so the default still applies when a
+  caller omits the type. Editing an existing letter keeps its own type.
+
+## [0.2.13] - 2026-06-28
+
+### Fixed
+- **Attachment upload stuck on "loading".** `OaDropzone` pushed a raw file entry
+  into the reactive `files` array but then mutated the *raw* reference inside
+  `upload()`. In Vue 3 those mutations bypass the reactive proxy, so the row's
+  `uploading` flag never re-rendered — the spinner spun forever (even when the
+  file had actually uploaded) and the success check never appeared. The upload
+  now updates the entry **through** the reactive array (looked up by `uid`).
+  Also hardened the handler to check `res.ok` / a missing `file_url` and surface
+  the real server error (`_server_messages`) instead of failing silently.
+
+## [0.2.12] - 2026-06-28
+
+### Fixed
+- **Draft letters were not editable.** The SPA could create and save drafts but
+  offered no way to edit them — clicking a draft opened the read-only letter
+  view, the composer always *created* a new letter, and there was no update
+  endpoint. Drafts could only be edited from the raw Frappe desk form (and a
+  letter recalled back to Draft was therefore stuck). The composer now has an
+  edit mode: clicking a draft (or the new **ویرایش** button on a draft letter
+  view) opens it pre-filled, and saving updates it in place — including
+  re-sending it.
+  - New whitelisted endpoints `get_letter_for_edit` and `update_letter`
+    (draft-only; rebuilds the recipient/CC/attachment rows). `create_letter` was
+    refactored to share the payload logic (`_apply_letter_payload`).
+  - `OaDropzone` now seeds from its `modelValue`, so existing attachments show on
+    edit and are preserved on save instead of being wiped.
+
+## [0.2.11] - 2026-06-28
+
+### Added
+- **Recall sent letters (بازپس‌گیری).** The sender can unsend a letter while
+  recipients have not opened it yet. A **بازپس‌گیری** button on the letter view
+  (and a per-recipient action in the referral flow) pulls the letter back from
+  every recipient whose referral is still *Unseen*; recipients who already
+  opened it keep their copy. When *no one* has opened it, the letter fully
+  reverts to an editable **Draft** so it can be amended and re-sent.
+  - New whitelisted endpoints `recall_letter` and `recall_referral`
+    (sender-only). Recalling a referral now cleans up its ToDo + bell
+    notifications and live-refreshes the recipient's Cartable
+    (`Document Referral.on_trash`).
+  - `get_letter_detail` exposes `is_sender`, `can_recall`, `unseen_count`, and a
+    per-referral `can_recall` / `seen_on` so the UI can offer recall only when
+    valid.
+
 ## [0.2.10] - 2026-06-22
 
 ### Fixed

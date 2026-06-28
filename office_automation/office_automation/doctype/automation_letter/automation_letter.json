@@ -65,6 +65,7 @@
    "unique": 1
   },
   {
+   "default": "نامه داخلی",
    "fieldname": "letter_type",
    "fieldtype": "Link",
    "in_standard_filter": 1,

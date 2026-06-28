@@ -39,18 +39,50 @@ DEFAULT_ACTION_TYPES = [
 WORKSPACE_NAME = "Office Automation"
 WORKSPACE_ICON = "file"
 
+# Global default flag marking that the one-time Jalali auto-enable has run, so
+# later migrations respect an admin who deliberately switched it back off.
+JALALI_INIT_FLAG = "office_automation_jalali_initialized"
+
 
 def after_install():
 	create_custom_roles()
 	seed_master_data()
 	ensure_desk_workspace()
+	enable_jalali_calendar()
 	frappe.db.commit()
 
 
 def after_migrate():
 	"""Runs on every `bench migrate` — keeps the desk icon present & visible."""
 	ensure_desk_workspace()
+	enable_jalali_calendar()
 	frappe.db.commit()
+
+
+def enable_jalali_calendar():
+	"""Turn on Jalali display by default for Persian deployments — once.
+
+	This app lists ``persian_calendar`` as a required app, so its **Jalali
+	Settings** singleton exists by the time we run. On the *first* pass we enable
+	it (Default Calendar = Jalali) and record a global flag. After that the flag
+	makes us a no-op, so an admin who later switches it off (or tweaks week
+	start/end) is respected on subsequent migrations. Best-effort: never block
+	migrate if the app is absent or its schema changes.
+	"""
+	if frappe.db.get_default(JALALI_INIT_FLAG):
+		return
+	if not frappe.db.exists("DocType", "Jalali Settings"):
+		# Required app not migrated yet — retry on the next migrate (no flag set).
+		return
+	try:
+		# Don't override a value the admin already set; only enable when still off.
+		if not frappe.db.get_single_value("Jalali Settings", "enable_jalali"):
+			frappe.db.set_single_value("Jalali Settings", "enable_jalali", 1)
+			frappe.db.set_single_value("Jalali Settings", "default_calendar", "Jalali")
+		# Mark the one-time pass done (whether we enabled it or it was already on).
+		frappe.db.set_default(JALALI_INIT_FLAG, "1")
+	except Exception:
+		frappe.log_error(title="office_automation: enabling Jalali calendar failed")
 
 
 def ensure_desk_workspace():

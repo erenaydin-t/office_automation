@@ -8,7 +8,7 @@
 			:aria-checked="modelValue === opt.value"
 			class="oa-seg"
 			:class="[{ active: modelValue === opt.value }, opt.tone ? 'tone-' + opt.tone : '']"
-			@click="$emit('update:modelValue', opt.value)"
+			@click="select(opt.value)"
 		>
 			<OaIcon v-if="opt.icon" :name="opt.icon" :size="15" />
 			{{ opt.label }}
@@ -28,5 +28,12 @@ export default {
 		options: { type: Array, required: true },
 	},
 	emits: ["update:modelValue"],
+	methods: {
+		select(value) {
+			// Only emit on an actual change — re-clicking the active option must not
+			// fire an update (which would, e.g., silently reset an edited date).
+			if (value !== this.modelValue) this.$emit("update:modelValue", value);
+		},
+	},
 };
 </script>
