@@ -72,13 +72,10 @@ def _apply_letter_payload(doc, data: dict):
 	doc.subject = data.get("subject")
 	doc.body = data.get("body")
 	doc.date = data.get("date") or frappe.utils.today()
-	# Fall back to the doc's existing/defaulted value so the field default
-	# ("نامه داخلی") still applies when a caller omits the type. Guard against a
-	# missing/renamed Letter Type so a stale default never blocks letter creation.
-	letter_type = data.get("letter_type") or doc.letter_type or None
-	if letter_type and not frappe.db.exists("Letter Type", letter_type):
-		letter_type = None
-	doc.letter_type = letter_type
+	# New-letter type defaults are applied by Automation Letter.before_insert
+	# (configurable via Office Automation Settings); preserve an existing value
+	# when a caller omits it on edit.
+	doc.letter_type = data.get("letter_type") or doc.letter_type or None
 	doc.confidentiality = data.get("confidentiality") or "Normal"
 	doc.urgency = data.get("urgency") or "Normal"
 	doc.is_private = 1 if data.get("is_private") else 0
@@ -106,6 +103,23 @@ def _apply_letter_payload(doc, data: dict):
 	for a in data.get("attachments") or []:
 		if a.get("file_url"):
 			doc.append("attachments", {"title": a.get("title"), "attachment": a["file_url"]})
+
+
+@frappe.whitelist()
+def get_default_letter_type() -> str | None:
+	"""The org's configured default Letter Type for new letters (or None).
+
+	Whitelisted so the composer can pre-select it without the user needing read
+	access to Office Automation Settings.
+	"""
+	from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
+		get_settings,
+	)
+
+	default_type = get_settings().default_letter_type
+	if default_type and frappe.db.exists("Letter Type", default_type):
+		return default_type
+	return None
 
 
 @frappe.whitelist()

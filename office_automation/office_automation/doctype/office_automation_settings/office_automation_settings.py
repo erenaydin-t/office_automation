@@ -15,6 +15,7 @@ class OfficeAutomationSettings(Document):
 		from frappe.types import DF
 
 		create_todo: DF.Check
+		default_letter_type: DF.Link | None
 		notify_on_overdue: DF.Check
 		overdue_after_days: DF.Int
 		realtime_update: DF.Check

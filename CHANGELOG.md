@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.19] - 2026-06-28
+
+### Changed
+- **Default letter type is now configurable, not hardcoded.** The previous
+  hardcoded «نامه داخلی» default didn't apply on sites that rename their Letter
+  Types (e.g. «1-نامه داخلی»), so nothing was pre-selected. Added a **Default
+  Letter Type** field to *Office Automation Settings*; `Automation Letter.before_insert`
+  applies it to new letters (covers SPA, desk, and API), and the composer
+  pre-selects it via the whitelisted `get_default_letter_type`. Fresh installs
+  seed it to the seeded Internal type when present; sites with renamed types just
+  pick their own value in Settings. Removed the hardcoded field/composer defaults.
+
 ## [0.2.18] - 2026-06-28
 
 ### Fixed

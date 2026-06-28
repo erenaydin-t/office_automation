@@ -49,6 +49,7 @@ def after_install():
 	seed_master_data()
 	ensure_desk_workspace()
 	enable_jalali_calendar()
+	ensure_default_letter_type()
 	frappe.db.commit()
 
 
@@ -56,7 +57,24 @@ def after_migrate():
 	"""Runs on every `bench migrate` — keeps the desk icon present & visible."""
 	ensure_desk_workspace()
 	enable_jalali_calendar()
+	ensure_default_letter_type()
 	frappe.db.commit()
+
+
+def ensure_default_letter_type():
+	"""Default new letters to the seeded Internal type «نامه داخلی», once.
+
+	Only sets it when the setting is blank and that type exists, so it never
+	overrides an admin's choice — and sites that renamed their types (e.g.
+	«1-نامه داخلی») simply pick their own value in Office Automation Settings.
+	"""
+	if not frappe.db.exists("DocType", "Office Automation Settings"):
+		return
+	if frappe.db.get_single_value("Office Automation Settings", "default_letter_type"):
+		return
+	internal = "نامه داخلی"
+	if frappe.db.exists("Letter Type", internal):
+		frappe.db.set_single_value("Office Automation Settings", "default_letter_type", internal)
 
 
 def enable_jalali_calendar():

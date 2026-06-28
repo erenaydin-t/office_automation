@@ -13,7 +13,9 @@
   "sla_section",
   "overdue_after_days",
   "column_break_sla",
-  "notify_on_overdue"
+  "notify_on_overdue",
+  "letters_section",
+  "default_letter_type"
  ],
  "fields": [
   {
@@ -69,12 +71,24 @@
    "fieldname": "notify_on_overdue",
    "fieldtype": "Check",
    "label": "Notify On Overdue"
+  },
+  {
+   "fieldname": "letters_section",
+   "fieldtype": "Section Break",
+   "label": "Letters"
+  },
+  {
+   "description": "Pre-selected as the type for new letters. Leave blank for none.",
+   "fieldname": "default_letter_type",
+   "fieldtype": "Link",
+   "label": "Default Letter Type",
+   "options": "Letter Type"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-16 00:00:00.000000",
+ "modified": "2026-06-28 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Office Automation",
  "name": "Office Automation Settings",

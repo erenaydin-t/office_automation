@@ -41,6 +41,19 @@ class AutomationLetter(Document):
 		urgency: DF.Literal["Normal", "Urgent", "Immediate"]
 	# end: auto-generated types
 
+	def before_insert(self):
+		# Apply the org's configured default letter type to new letters when none
+		# was chosen. Stored as a setting (not hardcoded) so it works regardless of
+		# how each site names/renames its Letter Types.
+		if not self.letter_type:
+			from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
+				get_settings,
+			)
+
+			default_type = get_settings().default_letter_type
+			if default_type and frappe.db.exists("Letter Type", default_type):
+				self.letter_type = default_type
+
 	def validate(self):
 		if not self.sender:
 			self.sender = frappe.session.user

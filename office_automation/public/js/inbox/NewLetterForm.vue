@@ -135,8 +135,9 @@ export default {
 		return {
 			dateChoice: "today",
 			date: frappe.datetime.get_today(),
-			// Default letter type for new letters (the seeded Internal type).
-			letterType: "نامه داخلی",
+			// Pre-selected from Office Automation Settings (default_letter_type) in
+			// mounted(), so it matches whatever each site names its types.
+			letterType: "",
 			letterTypes: [],
 			confidentiality: "Normal",
 			urgency: "Normal",
@@ -197,6 +198,15 @@ export default {
 			});
 		} catch (e) {
 			/* optional */
+		}
+		// Pre-select the org's configured default type for NEW letters only.
+		if (!this.isEdit) {
+			try {
+				const dft = await frappe.xcall(LETTER_API + "get_default_letter_type");
+				if (dft && this.letterTypes.includes(dft)) this.letterType = dft;
+			} catch (e) {
+				/* optional */
+			}
 		}
 		if (this.isEdit) await this.loadForEdit();
 	},
