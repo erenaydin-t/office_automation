@@ -34,6 +34,11 @@ add_to_apps_screen = [
 # (overridable with ?noredirect=1). Lightweight; only acts on that one route.
 app_include_js = "/assets/office_automation/js/oa_router.js"
 
+# Standalone @font-face stylesheet for the bundled free Persian fonts
+# (Vazirmatn, Shabnam). Loaded directly (not via the SPA bundle, whose esbuild
+# has no font loader) so the editor + letter views can render them.
+app_include_css = "/assets/office_automation/css/oa_fonts.css"
+
 # include js, css files in header of web template
 # web_include_css = "/assets/office_automation/css/office_automation.css"
 # web_include_js = "/assets/office_automation/js/office_automation.js"
