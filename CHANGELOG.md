@@ -3,6 +3,16 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.2] - 2026-06-28
+
+### Changed
+- **Editor font dropdown is now an all-free OFL set (10 fonts).** Replaced the
+  proprietary entries (IRANSans, B-series, Tahoma) with self-hosted SIL OFL
+  fonts so every option renders everywhere without a client install:
+  **Vazirmatn, Shabnam, Estedad** (≈ IRANYekan/IRANSans), **Sahel, Samim,
+  Tanha** (≈ Nazanin), **Gandom, Parastoo, Nahid, Lalezar** (display ≈ Titr).
+  All woff2 are bundled under `public/fonts/` and declared in `oa_fonts.css`.
+
 ## [0.3.1] - 2026-06-28
 
 ### Added

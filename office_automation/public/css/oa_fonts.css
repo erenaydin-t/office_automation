@@ -1,32 +1,40 @@
-/* Self-hosted free Persian fonts (SIL OFL) — Vazirmatn & Shabnam.
- * Loaded as a standalone stylesheet via hooks.py `app_include_css` (NOT through
- * the app bundle, whose esbuild has no .woff2 loader). Absolute /assets URLs
- * resolve the same in the editor, the letter read view, and browser print. */
-@font-face {
-	font-family: "Vazirmatn";
-	src: url("/assets/office_automation/fonts/Vazirmatn-Regular.woff2") format("woff2");
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
-}
-@font-face {
-	font-family: "Vazirmatn";
-	src: url("/assets/office_automation/fonts/Vazirmatn-Bold.woff2") format("woff2");
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
-@font-face {
-	font-family: "Shabnam";
-	src: url("/assets/office_automation/fonts/Shabnam-Regular.woff2") format("woff2");
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
-}
-@font-face {
-	font-family: "Shabnam";
-	src: url("/assets/office_automation/fonts/Shabnam-Bold.woff2") format("woff2");
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
+/* Self-hosted free Persian fonts (all SIL OFL). Served from the app's public
+ * dir; loaded as a standalone stylesheet via hooks.py `app_include_css` (NOT
+ * through the SPA bundle, whose esbuild has no .woff2 loader). Absolute /assets
+ * URLs resolve the same in the editor, the letter read view, and browser print. */
+
+/* Vazirmatn */
+@font-face { font-family: "Vazirmatn"; src: url("/assets/office_automation/fonts/Vazirmatn-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Vazirmatn"; src: url("/assets/office_automation/fonts/Vazirmatn-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Shabnam */
+@font-face { font-family: "Shabnam"; src: url("/assets/office_automation/fonts/Shabnam-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Shabnam"; src: url("/assets/office_automation/fonts/Shabnam-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Estedad (free IRANYekan/IRANSans-style) */
+@font-face { font-family: "Estedad"; src: url("/assets/office_automation/fonts/Estedad-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Estedad"; src: url("/assets/office_automation/fonts/Estedad-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Sahel */
+@font-face { font-family: "Sahel"; src: url("/assets/office_automation/fonts/Sahel-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Sahel"; src: url("/assets/office_automation/fonts/Sahel-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Samim */
+@font-face { font-family: "Samim"; src: url("/assets/office_automation/fonts/Samim-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Samim"; src: url("/assets/office_automation/fonts/Samim-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Tanha (free traditional / Nazanin-style) */
+@font-face { font-family: "Tanha"; src: url("/assets/office_automation/fonts/Tanha-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+
+/* Gandom */
+@font-face { font-family: "Gandom"; src: url("/assets/office_automation/fonts/Gandom-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+
+/* Parastoo */
+@font-face { font-family: "Parastoo"; src: url("/assets/office_automation/fonts/Parastoo-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Parastoo"; src: url("/assets/office_automation/fonts/Parastoo-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Nahid */
+@font-face { font-family: "Nahid"; src: url("/assets/office_automation/fonts/Nahid-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+
+/* Lalezar (display / Titr-style) */
+@font-face { font-family: "Lalezar"; src: url("/assets/office_automation/fonts/Lalezar-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
