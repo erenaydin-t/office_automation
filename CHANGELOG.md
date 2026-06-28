@@ -3,6 +3,25 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] - 2026-06-28
+
+### Added
+- **New WYSIWYG editor (TipTap).** Replaced the letter composer's Quill control
+  with a TipTap-based `OaEditor.vue` (MIT-licensed, native Vue 3, native RTL).
+  Toolbar: **Font Family** dropdown (10 Persian fonts — Vazirmatn, Shabnam,
+  IRANSans, B Yekan/Nazanin/Roya/Koodak/Titr/Mitra, Tahoma), font size, bold/
+  italic/underline/strike, text color, heading, bullet/ordered lists, quote,
+  alignment, link, clear-format, undo/redo. New app-level `package.json` pins the
+  TipTap deps (installed at image build).
+
+### Notes
+- Fonts are **referenced by name, not bundled**: each renders only where the
+  user has it installed, and **not in server-generated PDFs**. To make a font
+  appear everywhere (incl. PDF), send the `woff2`/`ttf` files and we'll self-host
+  + bake them into the image.
+- Deploy needs the npm deps installed (`yarn` in the app) + `bench build`, so the
+  editor change should land via an **image rebuild** (not a runtime asset patch).
+
 ## [0.2.19] - 2026-06-28
 
 ### Changed

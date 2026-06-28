@@ -76,7 +76,7 @@
 								@input="error = ''"
 							/>
 							<label class="oa-label" style="margin-top: 16px">{{ __("متن") }}</label>
-							<div ref="body" class="oa-body-editor"></div>
+							<OaEditor v-model="body" />
 						</section>
 
 						<!-- Attachments -->
@@ -118,12 +118,13 @@ import OaIcon from "./components/OaIcon.vue";
 import OaSegmented from "./components/OaSegmented.vue";
 import OaUserChips from "./components/OaUserChips.vue";
 import OaDropzone from "./components/OaDropzone.vue";
+import OaEditor from "./OaEditor.vue";
 
 const LETTER_API = "office_automation.office_automation.api.letter.";
 
 export default {
 	name: "NewLetterForm",
-	components: { OaIcon, OaSegmented, OaUserChips, OaDropzone },
+	components: { OaIcon, OaSegmented, OaUserChips, OaDropzone, OaEditor },
 	props: {
 		referLetter: { type: Object, default: null },
 		// Name of an existing draft to edit. When set, the form loads and updates
@@ -146,10 +147,10 @@ export default {
 			cc: [],
 			referralType: "Action",
 			subject: "",
+			body: "",
 			attachments: [],
 			busy: false,
 			error: "",
-			bodyControl: null,
 			dateOptions: [
 				{ value: "today", label: __("امروز") },
 				{ value: "yesterday", label: __("دیروز") },
@@ -183,13 +184,7 @@ export default {
 		},
 	},
 	async mounted() {
-		// Real WYSIWYG: reuse Frappe's Text Editor control.
-		this.bodyControl = frappe.ui.form.make_control({
-			df: { fieldtype: "Text Editor", fieldname: "body", label: "" },
-			parent: this.$refs.body,
-			render_input: true,
-		});
-		this.bodyControl.set_value("");
+		// Body uses the TipTap-based OaEditor (v-model="body").
 		try {
 			this.letterTypes = await frappe.db.get_list("Letter Type", {
 				filters: { is_active: 1 },
@@ -228,7 +223,7 @@ export default {
 				this.referralType = (d.recipients && d.recipients[0] && d.recipients[0].referral_type) || "Action";
 				this.cc = (d.cc || []).map((c) => ({ value: c.recipient, label: c.recipient_name || c.recipient }));
 				this.attachments = (d.attachments || []).map((a) => ({ title: a.title, file_url: a.file_url }));
-				if (this.bodyControl) this.bodyControl.set_value(d.body || "");
+				this.body = d.body || "";
 				// Remember per-recipient fields the composer UI can't show, so a save
 				// preserves them instead of clearing action_type/instruction and
 				// flattening differing referral types.
@@ -271,7 +266,7 @@ export default {
 			try {
 				const payload = {
 					subject: this.subject,
-					body: this.bodyControl ? this.bodyControl.get_value() : "",
+					body: this.body,
 					date: this.date,
 					letter_type: this.letterType || null,
 					confidentiality: this.confidentiality,
@@ -315,12 +310,6 @@ export default {
 </script>
 
 <style scoped>
-.oa-body-editor :deep(.ql-container) {
-	border-radius: 0 0 8px 8px;
-}
-.oa-body-editor :deep(.ql-toolbar) {
-	border-radius: 8px 8px 0 0;
-}
 .oa-error {
 	display: flex;
 	align-items: center;
