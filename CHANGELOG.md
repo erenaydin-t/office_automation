@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.1] - 2026-06-30
+
+### Fixed
+- **Security: a sender could action the referral they sent.** `approve_referral`,
+  `reject_referral`, `return_referral` and `mark_referral_actioned` gated on a
+  generic `write` permission, which the delegation `has_permission` hook also
+  grants to the sender/owner — so a sender could forge an outcome and dismiss the
+  item from the recipient's inbox before they ever saw it. `_get_own_referral`
+  now requires the caller to be the **recipient or one of the recipient's active
+  delegates** (`recipient in get_effective_users(session_user)`); senders are
+  explicitly blocked. Added `test_sender_cannot_action_own_referral`.
+
 ## [0.4.0] - 2026-06-30
 
 ### Added

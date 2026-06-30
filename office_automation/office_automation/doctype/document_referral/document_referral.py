@@ -6,6 +6,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime
 
+from office_automation.office_automation.permissions.delegation import get_effective_users
+
 STATUS_DRAFT = "Draft"
 STATUS_UNSEEN = "Unseen"
 STATUS_SEEN = "Seen"
@@ -631,11 +633,27 @@ def _notify_recall(referral):
 
 
 def _get_own_referral(referral: str):
+	"""Load a referral the current user is entitled to ACT ON (approve / reject /
+	return / mark-actioned).
+
+	Acting on a referral is the *recipient's* decision, so only the recipient —
+	or a user actively delegated to substitute for that recipient — may do it.
+	A generic ``write`` permission is deliberately NOT sufficient: the delegation
+	``has_permission`` hook grants write to the sender and owner too (so they can
+	read/track the item), but the sender must never be able to approve, reject or
+	return a referral they sent — that would let them forge an outcome and dismiss
+	the item from the recipient's inbox before the recipient ever sees it.
+
+	``get_effective_users(session_user)`` is the session user plus every delegator
+	they currently substitute for, so ``recipient in effective`` is true exactly
+	when the caller is the recipient or one of the recipient's active delegates.
+	"""
 	doc = frappe.get_doc("Document Referral", referral)
-	if doc.recipient != frappe.session.user and not frappe.has_permission(
-		"Document Referral", doc=doc, ptype="write"
-	):
-		frappe.throw(_("You can only update your own inbox items."), frappe.PermissionError)
+	if doc.recipient not in get_effective_users(frappe.session.user):
+		frappe.throw(
+			_("Only the recipient (or their delegate) can action this referral."),
+			frappe.PermissionError,
+		)
 	return doc
 
 

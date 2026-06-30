@@ -143,6 +143,25 @@ class TestDocumentReferral(FrappeTestCase):
 		self.assertEqual(row.status, "Actioned")
 		self.assertEqual(row.outcome, "Returned")
 
+	def test_sender_cannot_action_own_referral(self):
+		"""A sender must not approve/reject/return a referral they sent — only the
+		recipient (or a delegate) may action it (security review fix)."""
+		ref1 = forward_document("Automation Letter", self.letter.name, self.user1, "Please review")
+		frappe.set_user(self.user1)
+		# user1 forwards to user2: user1 is now the SENDER of ref2, user2 the recipient.
+		ref2 = forward_document(
+			"Automation Letter", self.letter.name, self.user2, "Please action", parent_referral=ref1
+		)
+		# As the sender, user1 must be blocked from every outcome action on ref2.
+		for action in (approve_referral, reject_referral, return_referral):
+			with self.assertRaises(frappe.PermissionError):
+				action(ref2)
+		frappe.set_user("Administrator")
+		# The referral is untouched: still open, outcome still Pending.
+		row = frappe.db.get_value("Document Referral", ref2, ["status", "outcome"], as_dict=True)
+		self.assertEqual(row.outcome, "Pending")
+		self.assertNotEqual(row.status, "Actioned")
+
 	# ------------------------------------------------------------------ #
 	# Recall (بازپس‌گیری)
 	# ------------------------------------------------------------------ #
