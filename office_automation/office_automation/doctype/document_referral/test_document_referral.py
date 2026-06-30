@@ -162,6 +162,26 @@ class TestDocumentReferral(FrappeTestCase):
 		self.assertEqual(row.outcome, "Pending")
 		self.assertNotEqual(row.status, "Actioned")
 
+	def test_returned_referral_appears_in_sender_outbox(self):
+		"""A returned referral surfaces in the sender's 'returned' Outbox folder
+		and is counted there (Return feature)."""
+		from office_automation.office_automation.api.inbox import (
+			get_folder_counts,
+			get_outbox_items,
+		)
+
+		# Administrator (sender) -> user1 (recipient), who then returns it.
+		ref = forward_document(
+			"Automation Letter", self.letter.name, self.user1, "Please revise", referral_type="Action"
+		)
+		frappe.set_user(self.user1)
+		return_referral(ref, note="Back to you")
+		frappe.set_user("Administrator")
+
+		returned_names = [r["name"] for r in get_outbox_items(state="returned")]
+		self.assertIn(ref, returned_names)
+		self.assertGreaterEqual(get_folder_counts()["outbox"]["returned"], 1)
+
 	# ------------------------------------------------------------------ #
 	# Recall (بازپس‌گیری)
 	# ------------------------------------------------------------------ #

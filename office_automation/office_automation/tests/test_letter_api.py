@@ -156,11 +156,18 @@ class TestLetterApi(FrappeTestCase):
 		self.assertEqual(row.instruction, "هامش اولیه")
 
 	def test_missing_letter_type_does_not_block_creation(self):
-		"""A stale/renamed default Letter Type must not raise — it falls back to none."""
+		"""An explicitly-chosen Letter Type that no longer exists must not raise a
+		link-validation error on insert — the stale value is dropped so creation
+		never blocks. It then falls back to the org's configured default (if that
+		default still exists) or to none; either way the bogus value is never
+		persisted and any stored value is a real Letter Type."""
 		res = create_letter(
 			json.dumps({"subject": "No such type", "letter_type": "____nonexistent____"}), submit=0
 		)
-		self.assertFalse(frappe.db.get_value("Automation Letter", res["name"], "letter_type"))
+		stored = frappe.db.get_value("Automation Letter", res["name"], "letter_type")
+		self.assertNotEqual(stored, "____nonexistent____")
+		if stored:
+			self.assertTrue(frappe.db.exists("Letter Type", stored))
 
 	def test_subject_is_mandatory_on_update(self):
 		name = self._draft()["name"]
