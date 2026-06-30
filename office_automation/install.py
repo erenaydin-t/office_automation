@@ -80,7 +80,7 @@ def ensure_default_letter_type():
 def enable_jalali_calendar():
 	"""Turn on Jalali display by default for Persian deployments — once.
 
-	This app lists ``persian_calendar`` as a required app, so its **Jalali
+	When the optional ``persian_calendar`` app is installed, its **Jalali
 	Settings** singleton exists by the time we run. On the *first* pass we enable
 	it (Default Calendar = Jalali) and record a global flag. After that the flag
 	makes us a no-op, so an admin who later switches it off (or tweaks week

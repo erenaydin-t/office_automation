@@ -11,9 +11,12 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# This module targets Persian (Jalali) deployments and relies on the
-# persian_calendar app for Jalali display across the desk + print helpers.
-required_apps = ["persian_calendar"]
+# This module targets Persian (Jalali) deployments and integrates with the
+# persian_calendar app for Jalali display across the desk + print helpers when
+# it is installed. It is an OPTIONAL dependency: the app installs and runs
+# without it (install.py degrades gracefully), so it is intentionally not listed
+# in `required_apps` — Frappe would otherwise try to fetch it from a remote on
+# install and fail. Install persian_calendar separately to enable Jalali.
 
 # Each item in the list will be shown as an app icon on the /apps screen.
 add_to_apps_screen = [
