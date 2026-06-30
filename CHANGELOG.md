@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] - 2026-06-30
+
+### Added
+- **"Return" (عودت) action for incoming letters.** Alongside تأیید/رد (Approve/
+  Reject), a recipient can now return a referral to its sender for revision.
+  It closes the recipient's inbox item (status `Actioned`) and records the new
+  `Returned` outcome, then notifies the sender — same proven path as approve/
+  reject (`return_referral` in `document_referral.py`).
+- **"Returned" Outbox folder** in the Cartable SPA so senders can see every
+  letter that was returned to them (`get_outbox_items`/`get_folder_counts`
+  state `returned`), plus a distinct blue `reply` marker in the referral tree.
+- **"Returned Letters" desk list** — a workspace shortcut opening Document
+  Referral filtered to `outcome = Returned`.
+
 ## [0.3.2] - 2026-06-28
 
 ### Changed

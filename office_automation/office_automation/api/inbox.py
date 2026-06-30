@@ -141,7 +141,7 @@ def get_yic_items(user: str | None = None) -> list[dict]:
 # --------------------------------------------------------------------------- #
 @frappe.whitelist()
 def get_outbox_items(user: str | None = None, state: str = "all") -> list[dict]:
-	"""Referrals sent by the user. ``state``: all | in_progress | approved | rejected."""
+	"""Referrals sent by the user. ``state``: all | in_progress | approved | rejected | returned."""
 	senders = _recipients_for(user)
 	filters = {"sender": ["in", senders]}
 
@@ -151,6 +151,8 @@ def get_outbox_items(user: str | None = None, state: str = "all") -> list[dict]:
 		filters["outcome"] = "Approved"
 	elif state == "rejected":
 		filters["outcome"] = "Rejected"
+	elif state == "returned":
+		filters["outcome"] = "Returned"
 
 	rows = frappe.get_all(
 		"Document Referral",
@@ -245,6 +247,9 @@ def get_folder_counts(user: str | None = None) -> dict:
 		),
 		"rejected": frappe.db.count(
 			"Document Referral", {"sender": ["in", recipients], "outcome": "Rejected"}
+		),
+		"returned": frappe.db.count(
+			"Document Referral", {"sender": ["in", recipients], "outcome": "Returned"}
 		),
 	}
 

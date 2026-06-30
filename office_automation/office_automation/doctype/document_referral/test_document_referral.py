@@ -12,6 +12,7 @@ from office_automation.office_automation.doctype.document_referral.document_refe
 	recall_letter,
 	recall_referral,
 	reject_referral,
+	return_referral,
 )
 
 OA_USER_ROLE = "Office Automation User"
@@ -130,6 +131,17 @@ class TestDocumentReferral(FrappeTestCase):
 		reject_referral(ref, note="Needs rework")
 		frappe.set_user("Administrator")
 		self.assertEqual(frappe.db.get_value("Document Referral", ref, "outcome"), "Rejected")
+
+	def test_return_sets_outcome(self):
+		ref = forward_document(
+			"Automation Letter", self.letter.name, self.user1, "Please revise", referral_type="Action"
+		)
+		frappe.set_user(self.user1)
+		return_referral(ref, note="Returned for correction")
+		frappe.set_user("Administrator")
+		row = frappe.db.get_value("Document Referral", ref, ["status", "outcome"], as_dict=True)
+		self.assertEqual(row.status, "Actioned")
+		self.assertEqual(row.outcome, "Returned")
 
 	# ------------------------------------------------------------------ #
 	# Recall (بازپس‌گیری)

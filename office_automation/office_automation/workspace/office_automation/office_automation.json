@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\": \"oa_header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Office Automation (\\u0627\\u062a\\u0648\\u0645\\u0627\\u0633\\u06cc\\u0648\\u0646 \\u0627\\u062f\\u0627\\u0631\\u06cc)</b></span>\", \"col\": 12}}, {\"id\": \"oa_nc_unseen\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"OA Unseen Referrals\", \"col\": 4}}, {\"id\": \"oa_nc_pending\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"OA Pending Referrals\", \"col\": 4}}, {\"id\": \"oa_nc_overdue\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"OA Overdue Referrals\", \"col\": 4}}, {\"id\": \"oa_sc_head\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h6\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"oa_sc_inbox\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Inbox\", \"col\": 3}}, {\"id\": \"oa_sc_letter\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Automation Letter\", \"col\": 3}}, {\"id\": \"oa_sc_referral\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Document Referral\", \"col\": 3}}, {\"id\": \"oa_sc_deleg\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Delegation Rule\", \"col\": 3}}, {\"id\": \"oa_spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"oa_card_corr\", \"type\": \"card\", \"data\": {\"card_name\": \"Correspondence\", \"col\": 4}}, {\"id\": \"oa_card_masters\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"oa_card_access\", \"type\": \"card\", \"data\": {\"card_name\": \"Access Control\", \"col\": 4}}]",
+ "content": "[{\"id\": \"oa_header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Office Automation (\\u0627\\u062a\\u0648\\u0645\\u0627\\u0633\\u06cc\\u0648\\u0646 \\u0627\\u062f\\u0627\\u0631\\u06cc)</b></span>\", \"col\": 12}}, {\"id\": \"oa_nc_unseen\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"OA Unseen Referrals\", \"col\": 4}}, {\"id\": \"oa_nc_pending\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"OA Pending Referrals\", \"col\": 4}}, {\"id\": \"oa_nc_overdue\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"OA Overdue Referrals\", \"col\": 4}}, {\"id\": \"oa_sc_head\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h6\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"oa_sc_inbox\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Inbox\", \"col\": 3}}, {\"id\": \"oa_sc_letter\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Automation Letter\", \"col\": 3}}, {\"id\": \"oa_sc_referral\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Document Referral\", \"col\": 3}}, {\"id\": \"oa_sc_deleg\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Delegation Rule\", \"col\": 3}}, {\"id\": \"oa_sc_returned\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Returned Letters\", \"col\": 3}}, {\"id\": \"oa_spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"oa_card_corr\", \"type\": \"card\", \"data\": {\"card_name\": \"Correspondence\", \"col\": 4}}, {\"id\": \"oa_card_masters\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"oa_card_access\", \"type\": \"card\", \"data\": {\"card_name\": \"Access Control\", \"col\": 4}}]",
  "creation": "2026-06-16 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -154,6 +154,14 @@
    "doc_view": "List",
    "label": "Delegation Rule",
    "link_to": "Delegation Rule",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "doc_view": "List",
+   "label": "Returned Letters",
+   "link_to": "Document Referral",
+   "stats_filter": "{\"outcome\":[\"=\",\"Returned\"]}",
    "type": "DocType"
   }
  ],

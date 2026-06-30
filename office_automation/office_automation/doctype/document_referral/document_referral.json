@@ -109,7 +109,7 @@
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Outcome",
-   "options": "Pending\nApproved\nRejected",
+   "options": "Pending\nApproved\nRejected\nReturned",
    "search_index": 1
   },
   {

@@ -232,6 +232,7 @@
 								<button v-if="cur.status!=='Draft'" @click="referCur()" class="h-primary" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:none;border-radius:12px;background:var(--primary);color:var(--on-primary);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--elev1)"><span class="ico" style="font-size:19px">forward_to_inbox</span>ارجاع</button>
 								<button v-if="cur.status!=='Draft'" @click="decideCur('approve')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(22,163,74,.4);border-radius:12px;background:rgba(22,163,74,.1);color:#16A34A;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">check_circle</span>تأیید</button>
 								<button v-if="cur.status!=='Draft'" @click="decideCur('reject')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(220,38,38,.4);border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">cancel</span>رد</button>
+								<button v-if="cur.status!=='Draft'" @click="decideCur('return')" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(2,132,199,.4);border-radius:12px;background:rgba(2,132,199,.1);color:#0284C7;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">reply</span>عودت</button>
 								<button v-if="cur.can_recall" @click="recallCur()" style="display:flex;align-items:center;gap:7px;height:42px;padding:0 18px;border:1px solid rgba(217,119,6,.45);border-radius:12px;background:rgba(217,119,6,.1);color:#D97706;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer"><span class="ico" style="font-size:19px">undo</span>بازپس‌گیری</button>
 								<div style="flex:1"></div>
 								<button @click="printLetter(cur.name)" class="h-surface2" style="width:42px;height:42px;border:1px solid var(--outline-soft);border-radius:12px;background:var(--surface);color:var(--on-variant);cursor:pointer"><span class="ico" style="font-size:19px">print</span></button>
@@ -380,6 +381,7 @@ export default {
 					{ key: "outbox:in_progress", label: "در دست اقدام", icon: "pending", scope: "outbox", state: "in_progress", count: c.outbox?.in_progress },
 					{ key: "outbox:approved", label: "تأیید شده‌ها", icon: "check_circle", scope: "outbox", state: "approved", count: c.outbox?.approved },
 					{ key: "outbox:rejected", label: "رد شده‌ها", icon: "cancel", scope: "outbox", state: "rejected", count: c.outbox?.rejected },
+					{ key: "outbox:returned", label: "عودت‌شده‌ها", icon: "reply", scope: "outbox", state: "returned", count: c.outbox?.returned },
 				] },
 				{ title: "سایر", items: [
 					{ key: "drafts", label: "پیش‌نویس‌ها", icon: "draft", scope: "drafts", count: c.drafts },
@@ -461,13 +463,15 @@ export default {
 			return { background: "var(--surface-2)", color: "var(--on-variant)" };
 		},
 		dotStyle(r) {
-			if (r.outcome === "Approved" || r.status === "Actioned") return { background: "rgba(22,163,74,.15)", color: "#16A34A" };
 			if (r.outcome === "Rejected") return { background: "rgba(220,38,38,.13)", color: "#DC2626" };
+			if (r.outcome === "Returned") return { background: "rgba(2,132,199,.13)", color: "#0284C7" };
+			if (r.outcome === "Approved" || r.status === "Actioned") return { background: "rgba(22,163,74,.15)", color: "#16A34A" };
 			return { background: "var(--primary-container)", color: "var(--on-primary-container)" };
 		},
 		dotIcon(r) {
-			if (r.outcome === "Approved" || r.status === "Actioned") return "check";
 			if (r.outcome === "Rejected") return "close";
+			if (r.outcome === "Returned") return "reply";
+			if (r.outcome === "Approved" || r.status === "Actioned") return "check";
 			return "forward_to_inbox";
 		},
 		navStyle(key) {
@@ -576,15 +580,19 @@ export default {
 			// Act on the current user's open referral for this letter.
 			const mine = (this.cur.referrals || []).find((r) => r.recipient === this.meEmail && ["Unseen", "Seen"].includes(r.status));
 			if (!mine) { frappe.msgprint("ارجاع بازی برای شما روی این نامه وجود ندارد."); return; }
-			const method = kind === "approve" ? "approve_referral" : "reject_referral";
+			const CFG = {
+				approve: { method: "approve_referral", title: "تأیید ارجاع", label: "تأیید", done: "تأیید شد", indicator: "green" },
+				reject: { method: "reject_referral", title: "رد ارجاع", label: "رد", done: "رد شد", indicator: "red" },
+				return: { method: "return_referral", title: "عودت ارجاع", label: "عودت", done: "عودت شد", indicator: "blue" },
+			}[kind];
 			const d = new frappe.ui.Dialog({
-				title: kind === "approve" ? "تأیید ارجاع" : "رد ارجاع",
+				title: CFG.title,
 				fields: [{ label: "یادداشت", fieldname: "note", fieldtype: "Small Text" }],
-				primary_action_label: kind === "approve" ? "تأیید" : "رد",
+				primary_action_label: CFG.label,
 				primary_action: async (v) => {
-					await frappe.xcall(REF + method, { referral: mine.name, note: v.note });
+					await frappe.xcall(REF + CFG.method, { referral: mine.name, note: v.note });
 					d.hide();
-					frappe.show_alert({ message: kind === "approve" ? "تأیید شد" : "رد شد", indicator: kind === "approve" ? "green" : "red" });
+					frappe.show_alert({ message: CFG.done, indicator: CFG.indicator });
 					this.openLetter(this.cur.name);
 				},
 			});

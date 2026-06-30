@@ -28,7 +28,7 @@ class DocumentReferral(Document):
 		is_cc: DF.Check
 		is_overdue: DF.Check
 		naming_series: DF.Literal["REF-.YYYY.-"]
-		outcome: DF.Literal["Pending", "Approved", "Rejected"]
+		outcome: DF.Literal["Pending", "Approved", "Rejected", "Returned"]
 		parent_referral: DF.Link | None
 		recipient: DF.Link
 		reference_doctype: DF.Link
@@ -465,6 +465,26 @@ def reject_referral(referral: str, note: str | None = None):
 	doc.mark_actioned(outcome="Rejected")
 	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
 	_notify_outcome(doc, "Rejected")
+	frappe.db.commit()
+	return doc.outcome
+
+
+@frappe.whitelist()
+def return_referral(referral: str, note: str | None = None):
+	"""Recipient returns the referral to its sender (عودت).
+
+	Like approve/reject this closes the recipient's own inbox item (status
+	``Actioned``) but records the distinct outcome ``Returned`` so the sender
+	sees it in their "Returned" Outbox folder. Use it when a letter is sent back
+	for revision/clarification rather than approved or rejected outright. An
+	optional note is appended to the instruction and the sender is notified.
+	"""
+	doc = _get_own_referral(referral)
+	if note:
+		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
+	doc.mark_actioned(outcome="Returned")
+	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
+	_notify_outcome(doc, "Returned")
 	frappe.db.commit()
 	return doc.outcome
 
