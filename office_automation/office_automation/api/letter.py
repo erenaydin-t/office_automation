@@ -74,8 +74,12 @@ def _apply_letter_payload(doc, data: dict):
 	doc.date = data.get("date") or frappe.utils.today()
 	# New-letter type defaults are applied by Automation Letter.before_insert
 	# (configurable via Office Automation Settings); preserve an existing value
-	# when a caller omits it on edit.
-	doc.letter_type = data.get("letter_type") or doc.letter_type or None
+	# when a caller omits it on edit. A stale/renamed type is dropped to None so
+	# it never blocks creation with a link-validation error.
+	letter_type = data.get("letter_type") or doc.letter_type or None
+	if letter_type and not frappe.db.exists("Letter Type", letter_type):
+		letter_type = None
+	doc.letter_type = letter_type
 	doc.confidentiality = data.get("confidentiality") or "Normal"
 	doc.urgency = data.get("urgency") or "Normal"
 	doc.is_private = 1 if data.get("is_private") else 0
