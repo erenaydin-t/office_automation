@@ -104,17 +104,11 @@ class TestLetterApi(FrappeTestCase):
 	def test_new_letter_defaults_to_internal_type(self):
 		"""A letter created without an explicit type falls back to «نامه داخلی»."""
 		res = create_letter(json.dumps({"subject": "No type given"}), submit=0)
-		self.assertEqual(
-			frappe.db.get_value("Automation Letter", res["name"], "letter_type"), "نامه داخلی"
-		)
+		self.assertEqual(frappe.db.get_value("Automation Letter", res["name"], "letter_type"), "نامه داخلی")
 
 	def test_explicit_letter_type_is_respected(self):
-		res = create_letter(
-			json.dumps({"subject": "Outgoing one", "letter_type": "نامه صادره"}), submit=0
-		)
-		self.assertEqual(
-			frappe.db.get_value("Automation Letter", res["name"], "letter_type"), "نامه صادره"
-		)
+		res = create_letter(json.dumps({"subject": "Outgoing one", "letter_type": "نامه صادره"}), submit=0)
+		self.assertEqual(frappe.db.get_value("Automation Letter", res["name"], "letter_type"), "نامه صادره")
 
 	def test_per_recipient_fields_survive_edit_round_trip(self):
 		"""get_letter_for_edit exposes action_type/instruction and update_letter

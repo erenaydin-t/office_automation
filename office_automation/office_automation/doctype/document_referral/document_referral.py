@@ -495,9 +495,7 @@ def recall_letter(reference_name: str, reference_doctype: str = "Automation Lett
 	kept = len(referrals) - len(unread)
 
 	if not unread:
-		frappe.throw(
-			_("This letter cannot be recalled — every recipient has already opened it.")
-		)
+		frappe.throw(_("This letter cannot be recalled — every recipient has already opened it."))
 
 	for name in unread:
 		_recall_single(name)
@@ -529,9 +527,7 @@ def recall_referral(referral: str) -> dict:
 
 def _assert_is_sender(sender: str | None):
 	if sender != frappe.session.user:
-		frappe.throw(
-			_("Only the original sender can recall this letter."), frappe.PermissionError
-		)
+		frappe.throw(_("Only the original sender can recall this letter."), frappe.PermissionError)
 
 
 def _recall_single(referral_name: str):
