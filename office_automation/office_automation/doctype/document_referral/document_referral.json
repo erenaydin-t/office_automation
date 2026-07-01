@@ -152,7 +152,7 @@
   {
    "fieldname": "instruction_section",
    "fieldtype": "Section Break",
-   "label": "Instruction (هامش‌نویسی)"
+   "label": "Instruction (توضیحات ارجاع)"
   },
   {
    "fieldname": "instruction",

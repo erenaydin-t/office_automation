@@ -103,7 +103,7 @@ function office_automation_add_recipient_dialog(frm) {
 				options: "Action Type",
 			},
 			{
-				label: __("Instruction (هامش‌نویسی)"),
+				label: __("Instruction (توضیحات ارجاع)"),
 				fieldname: "instruction",
 				fieldtype: "Small Text",
 			},
@@ -165,7 +165,7 @@ function office_automation_forward_dialog(frm) {
 				options: "Action Type",
 			},
 			{
-				label: __("Instruction / Note (هامش‌نویسی)"),
+				label: __("Instruction / Note (توضیحات ارجاع)"),
 				fieldname: "instruction",
 				fieldtype: "Small Text",
 			},

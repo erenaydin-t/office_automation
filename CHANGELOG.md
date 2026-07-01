@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.2] - 2026-07-01
+
+### Changed
+- **Renamed the referral-note label «هامش‌نویسی» → «توضیحات ارجاع»** everywhere it
+  is user-facing: the Cartable referral popup, the desk form fields on Document
+  Referral and the letter recipient row, the desk-form dialogs, and the thread
+  print output. This is a label-only change — the underlying `instruction` field
+  is unchanged, so no data migration and no existing notes are affected. (The
+  Approve/Reject/Return note field keeps its «یادداشت» label.) Desk-form/print
+  labels take effect after `bench migrate`.
+- **Custom themed "ارجاع" (Erja) modal.** The new-referral popup no longer uses
+  the stock `frappe.ui.Dialog`; it is a themed Vue modal (`OaReferForm.vue`)
+  matching the compose window — RTL, app fonts/colors, `OaUserChips` recipient
+  picker, segmented referral-type selector, «توضیحات ارجاع» note, and dropzone
+  attachment. It can now refer to **several recipients at once** (one referral
+  per recipient under the same parent).
+
 ## [0.4.1] - 2026-06-30
 
 ### Fixed

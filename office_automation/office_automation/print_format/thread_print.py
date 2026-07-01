@@ -4,7 +4,7 @@
 
 ``get_letter_thread`` assembles a single structured dictionary containing the
 main letter plus its full referral (Erja) tree, flattened into a chronological
-list of margin notes (هامش‌نویسی). It is registered as a Jinja method in
+list of margin notes (توضیحات ارجاع). It is registered as a Jinja method in
 ``hooks.py`` so the print format can call it directly, and is also whitelisted
 for ad-hoc/API use.
 

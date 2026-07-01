@@ -329,7 +329,7 @@ export default {
 			const d = new frappe.ui.Dialog({
 				title: isApprove ? __("تأیید ارجاع") : __("رد / بازگشت ارجاع"),
 				fields: [
-					{ label: __("یادداشت (هامش‌نویسی)"), fieldname: "note", fieldtype: "Small Text" },
+					{ label: __("یادداشت (توضیحات ارجاع)"), fieldname: "note", fieldtype: "Small Text" },
 				],
 				primary_action_label: isApprove ? __("تأیید") : __("رد"),
 				primary_action: async (v) => {
@@ -360,7 +360,7 @@ export default {
 						default: "Action",
 					},
 					{ label: __("نوع اقدام"), fieldname: "action_type", fieldtype: "Link", options: "Action Type" },
-					{ label: __("هامش‌نویسی"), fieldname: "instruction", fieldtype: "Small Text" },
+					{ label: __("توضیحات ارجاع"), fieldname: "instruction", fieldtype: "Small Text" },
 				],
 				primary_action_label: __("ارجاع"),
 				primary_action: async (v) => {

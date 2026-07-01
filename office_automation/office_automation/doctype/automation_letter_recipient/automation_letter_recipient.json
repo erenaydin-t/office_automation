@@ -53,7 +53,7 @@
    "fieldname": "instruction",
    "fieldtype": "Small Text",
    "in_list_view": 1,
-   "label": "Instruction (هامش‌نویسی)"
+   "label": "Instruction (توضیحات ارجاع)"
   }
  ],
  "index_web_pages_for_search": 1,
