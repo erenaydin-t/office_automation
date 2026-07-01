@@ -162,6 +162,34 @@ class TestDocumentReferral(FrappeTestCase):
 		self.assertEqual(row.outcome, "Pending")
 		self.assertNotEqual(row.status, "Actioned")
 
+	def test_recipient_cannot_edit_referral_instruction(self):
+		"""A recipient must not rewrite the sender's توضیحات ارجاع (or any field) of
+		an existing referral via a desk-style document save (security fix #1)."""
+		# Administrator (sender) -> user1 (recipient).
+		ref = forward_document("Automation Letter", self.letter.name, self.user1, "Original note")
+		frappe.set_user(self.user1)
+		doc = frappe.get_doc("Document Referral", ref)
+		doc.instruction = "TAMPERED"
+		with self.assertRaises(frappe.PermissionError):
+			doc.save()
+		frappe.set_user("Administrator")
+		# The sender's note is intact.
+		self.assertEqual(frappe.db.get_value("Document Referral", ref, "instruction"), "Original note")
+
+	def test_sender_can_edit_own_referral_instruction(self):
+		"""The sender of a referral may still edit it (the guard only blocks others)."""
+		ref1 = forward_document("Automation Letter", self.letter.name, self.user1, "Please review")
+		frappe.set_user(self.user1)
+		# user1 is the sender of ref2 -> allowed to edit its instruction.
+		ref2 = forward_document(
+			"Automation Letter", self.letter.name, self.user2, "Please act", parent_referral=ref1
+		)
+		doc = frappe.get_doc("Document Referral", ref2)
+		doc.instruction = "Updated by sender"
+		doc.save()
+		frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.get_value("Document Referral", ref2, "instruction"), "Updated by sender")
+
 	def test_returned_referral_appears_in_sender_outbox(self):
 		"""A returned referral surfaces in the sender's 'returned' Outbox folder
 		and is counted there (Return feature)."""

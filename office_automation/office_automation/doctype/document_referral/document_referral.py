@@ -6,7 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime
 
-from office_automation.office_automation.permissions.delegation import get_effective_users
+from office_automation.office_automation.permissions.delegation import get_effective_users, is_privileged
 
 STATUS_DRAFT = "Draft"
 STATUS_UNSEEN = "Unseen"
@@ -42,6 +42,7 @@ class DocumentReferral(Document):
 	# end: auto-generated types
 
 	def validate(self):
+		self._guard_sender_only_edit()
 		self._validate_reference_exists()
 		self._validate_recipient()
 		self._validate_parent_referral()
@@ -72,6 +73,33 @@ class DocumentReferral(Document):
 	# ------------------------------------------------------------------ #
 	# Validation helpers
 	# ------------------------------------------------------------------ #
+	def _guard_sender_only_edit(self):
+		"""Block a recipient from tampering with an *existing* referral.
+
+		The Office Automation User role has blanket ``write`` on Document Referral
+		(needed to create referrals when forwarding), and the delegation
+		``has_permission`` hook grants row-level write to the recipient, sender and
+		owner alike. That means a recipient can open the referral in the desk and
+		rewrite the sender's توضیحات ارجاع (``instruction``) or its routing fields.
+
+		Only the **sender** (the author of the referral) or a privileged user may
+		modify an existing referral. Creation is exempt — it is governed by role
+		permissions and the forward API. The internal state transitions
+		(``mark_seen`` / ``mark_actioned`` / approve-reject-return) all use
+		``db_set`` and never run this validate path, so they are unaffected; the
+		recipient can still record their own note when actioning (that flow appends
+		via ``db_set``, it does not overwrite the sender's note).
+		"""
+		if self.is_new():
+			return
+		user = frappe.session.user
+		if user == self.sender or is_privileged(user):
+			return
+		frappe.throw(
+			_("Only the sender can modify a referral once it has been sent."),
+			frappe.PermissionError,
+		)
+
 	def _validate_reference_exists(self):
 		if not (self.reference_doctype and self.reference_name):
 			frappe.throw(_("Reference Document is mandatory."))

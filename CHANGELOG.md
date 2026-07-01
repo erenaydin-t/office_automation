@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.3] - 2026-07-01
+
+### Fixed
+- **Security: a recipient could edit the sender's referral note/fields.** Because
+  the Office Automation User role has blanket `write` on Document Referral and the
+  delegation `has_permission` hook grants row-level write to the recipient, a
+  recipient could open the referral in the desk and rewrite the sender's
+  توضیحات ارجاع (`instruction`) or its routing fields. Added a `validate()` guard
+  (`_guard_sender_only_edit`) that blocks modifying an *existing* referral unless
+  the caller is its sender or a privileged user. Creation and the internal
+  `db_set`-based state transitions (mark seen/actioned, approve/reject/return) are
+  unaffected. Adds `test_recipient_cannot_edit_referral_instruction` and
+  `test_sender_can_edit_own_referral_instruction`.
+
 ## [0.4.2] - 2026-07-01
 
 ### Changed
