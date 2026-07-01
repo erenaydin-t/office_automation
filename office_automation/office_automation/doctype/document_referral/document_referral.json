@@ -155,10 +155,12 @@
    "label": "Instruction (توضیحات ارجاع)"
   },
   {
+   "description": "The sender's referral note (توضیحات ارجاع). Read-only in the desk for the Office Automation User role (permlevel 1) so a recipient cannot alter it; created/updated only via the referral APIs, or by a manager.",
    "fieldname": "instruction",
    "fieldtype": "Small Text",
    "in_global_search": 1,
-   "label": "User Instruction / Note"
+   "label": "User Instruction / Note",
+   "permlevel": 1
   },
   {
    "description": "Optional file attached with this referral.",
@@ -240,6 +242,23 @@
    "role": "Office Automation User",
    "share": 1,
    "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Office Automation Manager",
+   "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Office Automation User"
   }
  ],
  "sort_field": "modified",

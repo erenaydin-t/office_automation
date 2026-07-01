@@ -176,19 +176,53 @@ class TestDocumentReferral(FrappeTestCase):
 		# The sender's note is intact.
 		self.assertEqual(frappe.db.get_value("Document Referral", ref, "instruction"), "Original note")
 
-	def test_sender_can_edit_own_referral_instruction(self):
-		"""The sender of a referral may still edit it (the guard only blocks others)."""
+	def test_instruction_not_editable_by_ordinary_user_permlevel(self):
+		"""Defense-in-depth: `instruction` is permlevel 1, so an ordinary Office
+		Automation User cannot change it through a permission-checked (desk) save —
+		even the sender, whom the validate guard would otherwise permit. The field
+		lock discards the edit (no data change); only managers may write it."""
 		ref1 = forward_document("Automation Letter", self.letter.name, self.user1, "Please review")
 		frappe.set_user(self.user1)
-		# user1 is the sender of ref2 -> allowed to edit its instruction.
+		# user1 is the sender of ref2, so the validate guard permits the save; the
+		# permlevel field lock is the only thing stopping the instruction change.
 		ref2 = forward_document(
 			"Automation Letter", self.letter.name, self.user2, "Please act", parent_referral=ref1
 		)
 		doc = frappe.get_doc("Document Referral", ref2)
-		doc.instruction = "Updated by sender"
+		doc.instruction = "Ordinary user edit"
+		try:
+			doc.save()
+		except frappe.PermissionError:
+			pass
+		frappe.set_user("Administrator")
+		# Whichever layer fires, the security property holds: the note is unchanged.
+		self.assertEqual(frappe.db.get_value("Document Referral", ref2, "instruction"), "Please act")
+
+	def test_manager_can_edit_referral_instruction(self):
+		"""A privileged user (Office Automation Manager) retains permlevel-1 write,
+		so the field is locked for ordinary users but not for everyone."""
+		manager = "oa_manager@example.com"
+		if not frappe.db.exists("User", manager):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": manager,
+					"first_name": "manager",
+					"send_welcome_email": 0,
+					"enabled": 1,
+					"user_type": "System User",
+					"roles": [{"role": "Office Automation Manager"}],
+				}
+			).insert(ignore_permissions=True)
+		frappe.clear_cache(user=manager)
+		# Sender is Administrator; the manager is a third party (not the sender).
+		ref = forward_document("Automation Letter", self.letter.name, self.user1, "Original note")
+		frappe.set_user(manager)
+		doc = frappe.get_doc("Document Referral", ref)
+		doc.instruction = "Manager corrected"
 		doc.save()
 		frappe.set_user("Administrator")
-		self.assertEqual(frappe.db.get_value("Document Referral", ref2, "instruction"), "Updated by sender")
+		self.assertEqual(frappe.db.get_value("Document Referral", ref, "instruction"), "Manager corrected")
 
 	def test_returned_referral_appears_in_sender_outbox(self):
 		"""A returned referral surfaces in the sender's 'returned' Outbox folder

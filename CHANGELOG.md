@@ -3,6 +3,25 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.4] - 2026-07-01
+
+### Changed
+- **Defense-in-depth: the referral note is now field-locked in the desk.** The
+  Document Referral `instruction` (توضیحات ارجاع) field is set to **permlevel 1**,
+  with permlevel-1 **read** for the Office Automation User role and **read+write**
+  for Office Automation Manager / System Manager. So an ordinary user (including
+  the recipient) can *see* the note in the desk form but the field is read-only —
+  they can't even attempt to change it — while managers retain edit rights. This
+  complements the server-side `_guard_sender_only_edit()` validate guard (kept
+  active), which still protects every other field of an existing referral from
+  non-sender edits. Referral creation and the internal `db_set` state transitions
+  bypass permlevel, so forwarding and approve/reject/return are unaffected.
+  Note: because the sender shares the Office Automation User role, editing an
+  existing note via the desk is now manager-only; the referral APIs are the
+  supported way to set the note. Takes effect after `bench migrate`.
+- Tests updated: `test_instruction_not_editable_by_ordinary_user_permlevel` and
+  `test_manager_can_edit_referral_instruction`.
+
 ## [0.4.3] - 2026-07-01
 
 ### Fixed
