@@ -35,7 +35,9 @@ add_to_apps_screen = [
 # include js, css files in header of desk.html
 # Routing-layer guard that redirects the Office Automation workspace to /app/inbox
 # (overridable with ?noredirect=1). Lightweight; only acts on that one route.
-app_include_js = "/assets/office_automation/js/oa_router.js"
+# Referenced by bundle basename so Frappe resolves the content-hashed build from
+# assets.json (reliable inclusion + cache-busting).
+app_include_js = "oa_router.bundle.js"
 
 # Standalone @font-face stylesheet for the bundled free Persian fonts
 # (Vazirmatn, Shabnam). Loaded directly (not via the SPA bundle, whose esbuild

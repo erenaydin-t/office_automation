@@ -3,6 +3,30 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.5] - 2026-07-03
+
+### Changed
+- **Office Automation module now opens straight to the Inbox.** The workspace →
+  Inbox redirect guard is now shipped as a build bundle (`oa_router.bundle.js`)
+  and referenced by basename in `app_include_js`, so Frappe reliably includes it
+  and content-hashes it (no stale-cache misses). The guard also polls briefly on
+  a direct/full-page load instead of relying on a single fixed timer, and handles
+  the two-segment `["Workspaces", <slug>]` route shape. The admin escape hatch
+  (`?noredirect=1`) is unchanged. `remove_inbox_redirect_hack.py` still cleans the
+  old DB-only redirect artifacts and is unaffected. Takes effect after
+  `bench build`.
+
+### Removed
+- **Dark-mode toggle removed from the Inbox top bar.** The moon/sun switch next to
+  the user profile is gone and the panel is pinned to the light theme (previously
+  dark-mode users are no longer stranded without a toggle).
+
+### Added
+- **Dashboard summary cards are now clickable.** Each of the four headline cards
+  (دیده‌نشده / در انتظار اقدام / معوق / نامه‌های امروز) links to the matching
+  Document Referral filtered list — same predicates as `get_dashboard_stats`,
+  scoped to the current user.
+
 ## [0.4.4] - 2026-07-01
 
 ### Changed

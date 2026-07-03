@@ -6,6 +6,10 @@
 // event (the correct layer) so the navigation is NOT swallowed by the
 // workspace's own render — unlike a redirect inside a Custom HTML Block.
 //
+// Built as a `.bundle.js` (not a plain asset) so Frappe reliably includes it
+// via `app_include_js` and content-hashes it — the browser can never serve a
+// stale copy that silently skips the redirect.
+//
 // The workspace content page (Correspondence / Masters / Access Control cards)
 // stays reachable for admins via `?noredirect=1`.
 
@@ -17,9 +21,11 @@ office_automation.route_guard = function () {
 	try {
 		const route = (frappe.get_route && frappe.get_route()) || [];
 
-		// A workspace route is a single segment (the workspace slug/name).
-		const first = String(route[0] || "").toLowerCase();
-		const isWorkspace = route.length <= 1 && office_automation.WORKSPACE_SLUGS.includes(first);
+		// A workspace route is a single segment (the slug), or the two-segment
+		// ["Workspaces", "<slug>"] shape some versions/deep-links produce.
+		const segments = route.map((s) => String(s || "").toLowerCase());
+		const hit = segments.some((s) => office_automation.WORKSPACE_SLUGS.includes(s));
+		const isWorkspace = hit && route.length <= 2;
 		if (!isWorkspace) return;
 
 		const noredirect =
@@ -37,6 +43,18 @@ $(() => {
 	if (frappe.router && frappe.router.on) {
 		frappe.router.on("change", office_automation.route_guard);
 	}
-	// Handle a direct/deep load onto the workspace.
-	setTimeout(office_automation.route_guard, 300);
+
+	// Catch a direct/deep full-page load onto the workspace, where no router
+	// "change" event fires. frappe.get_route() isn't populated synchronously on
+	// boot, so poll briefly instead of relying on a single fixed timer.
+	let tries = 0;
+	const kick = () => {
+		const ready = frappe.get_route && (frappe.get_route() || []).length;
+		if (ready) {
+			office_automation.route_guard();
+			return;
+		}
+		if (tries++ < 20) setTimeout(kick, 100); // up to ~2s
+	};
+	kick();
 });

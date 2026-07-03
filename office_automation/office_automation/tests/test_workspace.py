@@ -12,7 +12,7 @@ class TestWorkspaceRouting(FrappeTestCase):
 		self.assertIn(wtype, ("Workspace", "Link", "URL"))
 
 	def test_inbox_page_exists(self):
-		"""The redirect target (oa_router.js) must resolve to a real Page."""
+		"""The redirect target (oa_router.bundle.js) must resolve to a real Page."""
 		self.assertTrue(frappe.db.exists("Page", "inbox"))
 
 	def test_no_redirect_html_block(self):

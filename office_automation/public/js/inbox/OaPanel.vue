@@ -19,9 +19,6 @@
 			</div>
 			<div style="flex:1"></div>
 			<div style="display:flex;align-items:center;gap:6px">
-				<button @click="toggleTheme" title="حالت روشن/تیره" class="h-surface2" style="width:42px;height:42px;border:none;border-radius:11px;background:var(--surface-1);color:var(--on-variant);cursor:pointer;display:flex;align-items:center;justify-content:center">
-					<span class="ico" style="font-size:21px">{{ theme === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
-				</button>
 				<div data-r="profchip" style="display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border-radius:30px;background:var(--surface-1);cursor:pointer">
 					<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1A56DB,#5B8DEF);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">{{ meInitials }}</div>
 					<div data-r="profmeta" style="display:flex;flex-direction:column;line-height:1.25;padding-left:4px">
@@ -66,7 +63,7 @@
 						</button>
 					</div>
 					<div data-r="grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px">
-						<div v-for="c in statCards" :key="c.label" style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;padding:20px;box-shadow:var(--elev1)">
+						<div v-for="c in statCards" :key="c.label" @click="c.go()" class="h-bord" style="background:var(--surface);border:1px solid var(--outline-soft);border-radius:18px;padding:20px;box-shadow:var(--elev1);cursor:pointer">
 							<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
 								<span style="font-size:13px;color:var(--on-variant);font-weight:600">{{ c.label }}</span>
 								<div style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center" :style="{background:c.tintBg}"><span class="ico" style="font-size:21px" :style="{color:c.color}">{{ c.icon }}</span></div>
@@ -289,7 +286,7 @@ export default {
 	components: { NewLetterForm, OaReferForm },
 	data() {
 		return {
-			theme: localStorage.getItem("oa_theme") || "light",
+			theme: "light",
 			view: "dashboard",
 			drawerOpen: false,
 			folder: "inbox:all",
@@ -344,11 +341,20 @@ export default {
 			];
 		},
 		statCards() {
+			// Each card drills into the Document Referral list filtered to match the
+			// number it shows (same predicates as api/inbox.get_dashboard_stats),
+			// scoped to the current user as the recipient.
+			const me = this.meEmail;
+			const today = frappe.datetime.get_today();
 			return [
-				{ label: "ارجاعات دیده‌نشده", value: this.stats.unseen, color: "#D97706", tintBg: "rgba(232,147,12,.14)", icon: "visibility_off", note: "نیازمند مشاهده" },
-				{ label: "در انتظار اقدام", value: this.stats.pending, color: "#2563EB", tintBg: "rgba(37,99,235,.13)", icon: "hourglass_top", note: "در حال پیگیری" },
-				{ label: "ارجاعات معوق", value: this.stats.overdue, color: "#DC2626", tintBg: "rgba(220,38,38,.13)", icon: "running_with_errors", note: "نیازمند رسیدگی فوری" },
-				{ label: "نامه‌های امروز", value: this.stats.today, color: "#16A34A", tintBg: "rgba(22,163,74,.13)", icon: "mark_email_unread", note: "دریافت‌شده امروز" },
+				{ label: "ارجاعات دیده‌نشده", value: this.stats.unseen, color: "#D97706", tintBg: "rgba(232,147,12,.14)", icon: "visibility_off", note: "نیازمند مشاهده",
+					go: () => this.routeList("Document Referral", { recipient: me, status: "Unseen" }) },
+				{ label: "در انتظار اقدام", value: this.stats.pending, color: "#2563EB", tintBg: "rgba(37,99,235,.13)", icon: "hourglass_top", note: "در حال پیگیری",
+					go: () => this.routeList("Document Referral", { recipient: me, status: "Seen" }) },
+				{ label: "ارجاعات معوق", value: this.stats.overdue, color: "#DC2626", tintBg: "rgba(220,38,38,.13)", icon: "running_with_errors", note: "نیازمند رسیدگی فوری",
+					go: () => this.routeList("Document Referral", { recipient: me, is_overdue: 1 }) },
+				{ label: "نامه‌های امروز", value: this.stats.today, color: "#16A34A", tintBg: "rgba(22,163,74,.13)", icon: "mark_email_unread", note: "دریافت‌شده امروز",
+					go: () => this.routeList("Document Referral", { recipient: me, creation: [">=", today] }) },
 			];
 		},
 		shortcuts() {
@@ -415,10 +421,6 @@ export default {
 		if (this._rt) frappe.realtime.off("oa_inbox_update", this._rt);
 	},
 	methods: {
-		toggleTheme() {
-			this.theme = this.theme === "dark" ? "light" : "dark";
-			localStorage.setItem("oa_theme", this.theme);
-		},
 		faNum(n) {
 			return String(n ?? 0).replace(/\d/g, (d) => FA_DIGITS[+d]);
 		},
@@ -484,6 +486,11 @@ export default {
 			return this.view === key ? "background:var(--primary-container);color:var(--on-primary-container)" : "background:transparent;color:var(--on-variant)";
 		},
 		route(doctype) {
+			frappe.set_route("List", doctype);
+		},
+		routeList(doctype, filters) {
+			// Pass prebuilt filters to the target list view via route_options.
+			frappe.route_options = filters;
 			frappe.set_route("List", doctype);
 		},
 		routeForm(doctype) {
