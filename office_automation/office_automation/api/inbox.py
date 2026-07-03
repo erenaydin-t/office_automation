@@ -83,10 +83,14 @@ def _recipients_for(user: str | None) -> list[str]:
 # Inbox (received)
 # --------------------------------------------------------------------------- #
 @frappe.whitelist()
-def get_inbox_items(user: str | None = None, folder: str = "all") -> list[dict]:
+def get_inbox_items(
+	user: str | None = None, folder: str = "all", limit: int | None = None
+) -> list[dict]:
 	"""Open inbox items for the user, optionally filtered by folder.
 
 	``folder`` is one of: all, order, followup, action, notification, info.
+	``limit`` caps the number of rows (e.g. the dashboard preview needs only a
+	handful); omit it to return the full folder.
 	Returns ``Document Referral`` rows where the user (or a delegator they
 	substitute for) is the recipient and the status is not ``Actioned``.
 	"""
@@ -102,6 +106,7 @@ def get_inbox_items(user: str | None = None, folder: str = "all") -> list[dict]:
 		filters=filters,
 		fields=REFERRAL_FIELDS,
 		order_by="creation desc",
+		limit_page_length=int(limit) if limit else 0,
 		ignore_permissions=True,
 	)
 	return _enrich(rows)
@@ -226,32 +231,42 @@ def get_letters_by_visibility(visibility: str = "public") -> list[dict]:
 # --------------------------------------------------------------------------- #
 @frappe.whitelist()
 def get_folder_counts(user: str | None = None) -> dict:
-	"""Badge counts for every sidebar folder."""
+	"""Badge counts for every sidebar folder.
+
+	Uses one grouped aggregate query per pane (inbox, outbox) instead of a
+	``COUNT`` per folder, so the whole sidebar refreshes in a few round-trips.
+	"""
 	recipients = _recipients_for(user)
 
-	def inbox_count(referral_type=None):
-		f = {"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]}
-		if referral_type:
-			f["referral_type"] = referral_type
-		return frappe.db.count("Document Referral", f)
+	# --- Inbox: open referrals grouped by type; "all" is the row total. ---
+	inbox = {key: 0 for key in INBOX_FOLDERS}
+	type_to_folder = {rt: key for key, rt in INBOX_FOLDERS.items() if rt}
+	for row in frappe.get_all(
+		"Document Referral",
+		filters={"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]},
+		fields=["referral_type", "count(name) as cnt"],
+		group_by="referral_type",
+	):
+		inbox["all"] += row.cnt
+		key = type_to_folder.get(row.referral_type)
+		if key:
+			inbox[key] += row.cnt
 
-	inbox = {key: inbox_count(rt) for key, rt in INBOX_FOLDERS.items()}
-
-	outbox = {
-		"all": frappe.db.count("Document Referral", {"sender": ["in", recipients]}),
-		"in_progress": frappe.db.count(
-			"Document Referral", {"sender": ["in", recipients], "status": ["in", OPEN_STATUSES]}
-		),
-		"approved": frappe.db.count(
-			"Document Referral", {"sender": ["in", recipients], "outcome": "Approved"}
-		),
-		"rejected": frappe.db.count(
-			"Document Referral", {"sender": ["in", recipients], "outcome": "Rejected"}
-		),
-		"returned": frappe.db.count(
-			"Document Referral", {"sender": ["in", recipients], "outcome": "Returned"}
-		),
-	}
+	# --- Outbox: everything sent, grouped by (outcome, status) in one pass. ---
+	outbox = {"all": 0, "in_progress": 0, "approved": 0, "rejected": 0, "returned": 0}
+	outcome_key = {"Approved": "approved", "Rejected": "rejected", "Returned": "returned"}
+	for row in frappe.get_all(
+		"Document Referral",
+		filters={"sender": ["in", recipients]},
+		fields=["outcome", "status", "count(name) as cnt"],
+		group_by="outcome, status",
+	):
+		outbox["all"] += row.cnt
+		if row.status in OPEN_STATUSES:
+			outbox["in_progress"] += row.cnt
+		key = outcome_key.get(row.outcome)
+		if key:
+			outbox[key] += row.cnt
 
 	drafts = frappe.db.count("Automation Letter", {"docstatus": 0, "owner": ["in", recipients]})
 
@@ -260,12 +275,38 @@ def get_folder_counts(user: str | None = None) -> dict:
 
 @frappe.whitelist()
 def get_dashboard_stats(user: str | None = None) -> dict:
-	"""Headline numbers for the dashboard cards."""
-	recipients = _recipients_for(user)
-	base = {"recipient": ["in", recipients]}
+	"""Headline numbers for the dashboard cards.
 
-	unseen = frappe.db.count("Document Referral", {**base, "status": "Unseen"})
-	pending = frappe.db.count("Document Referral", {**base, "status": "Seen"})
-	overdue = frappe.db.count("Document Referral", {**base, "is_overdue": 1, "status": ["in", OPEN_STATUSES]})
-	today = frappe.db.count("Document Referral", {**base, "creation": [">=", frappe.utils.today()]})
-	return {"unseen": unseen, "pending": pending, "overdue": overdue, "today": today}
+	Also returns ``recipients`` — the effective recipient set (the user plus
+	anyone they substitute for) — so the client can build drill-down list
+	filters that match these counts exactly, including under delegation.
+	"""
+	recipients = _recipients_for(user)
+
+	# unseen / pending / overdue all derive from the open-referral set, so a
+	# single query grouped by (status, is_overdue) covers all three.
+	unseen = pending = overdue = 0
+	for row in frappe.get_all(
+		"Document Referral",
+		filters={"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]},
+		fields=["status", "is_overdue", "count(name) as cnt"],
+		group_by="status, is_overdue",
+	):
+		if row.status == "Unseen":
+			unseen += row.cnt
+		elif row.status == "Seen":
+			pending += row.cnt
+		if row.is_overdue:
+			overdue += row.cnt
+
+	today = frappe.db.count(
+		"Document Referral",
+		{"recipient": ["in", recipients], "creation": [">=", frappe.utils.today()]},
+	)
+	return {
+		"unseen": unseen,
+		"pending": pending,
+		"overdue": overdue,
+		"today": today,
+		"recipients": recipients,
+	}

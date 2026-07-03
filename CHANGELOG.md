@@ -3,6 +3,34 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.6] - 2026-07-03
+
+### Changed
+- **Inbox backend queries collapsed via GROUP BY.** `get_folder_counts` now runs
+  one grouped aggregate per pane (inbox by type, outbox by outcome+status) instead
+  of a `COUNT` per folder — ~12 queries down to 3. `get_dashboard_stats` derives
+  unseen/pending/overdue from a single grouped query (4 → 2). Same numbers, far
+  fewer DB round-trips per refresh (and the panel refreshes on every realtime tick).
+- **Dashboard preview no longer over-fetches.** `get_inbox_items` gained a `limit`
+  param; the dashboard "در انتظار اقدام شما" list now requests 5 rows instead of
+  pulling the whole inbox and slicing client-side.
+- **Stat cards drill down to the exact number they show.** `get_dashboard_stats`
+  now returns the effective recipient set, so each card's Document Referral list
+  filter matches its count — including the overdue card's open-status predicate and
+  delegation (recipient `in` the substitute set).
+- **Inbox UI rebuilt on CSS classes.** The `OaPanel.vue` inline styles were migrated
+  into semantic classes in `panel.css` (dynamic, data-driven values — avatar/chip/
+  stat colours — remain as `:style` bindings). No visual change; far more
+  maintainable. Responsive `data-r` hooks are preserved.
+
+### Accessibility
+- Clickable dashboard cards, list rows, and table rows are now real `<button>`
+  elements (keyboard-focusable and operable), with a visible focus ring on all
+  controls in the panel.
+
+### Removed
+- Dead `InboxApp.vue` component (superseded by `OaPanel.vue`; unreferenced).
+
 ## [0.4.5] - 2026-07-03
 
 ### Changed
