@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.7] - 2026-07-03
+
+### Fixed
+- **Grouped count queries rejected by Frappe v16.** The v0.4.6 refactor passed
+  `count(name) as cnt` as a raw string in `fields`, which Frappe v16 blocks
+  (`SQL functions are not allowed as strings in SELECT`). Rewrote the three
+  grouped queries in `get_folder_counts` / `get_dashboard_stats` with the Query
+  Builder (`frappe.qb` + `Count`), which is injection-safe and version-proof.
+- **Stat cards routed out of the Cartable.** Clicking a dashboard summary card
+  used `frappe.set_route("List", …)`, dropping the user into the stock desk list
+  view. Cards now open their filtered referral list **inside** the custom app:
+  a new whitelisted `get_referrals_by_stat(kind)` returns the rows behind each
+  stat (same predicates as `get_dashboard_stats`, recipient-scoped), rendered by
+  the existing Cartable inbox list. `openStat` switches to the inbox view with a
+  `stat` scope; the header shows the card's label. Navigating to کارتابل resets
+  to the full inbox.
+
 ## [0.4.6] - 2026-07-03
 
 ### Changed

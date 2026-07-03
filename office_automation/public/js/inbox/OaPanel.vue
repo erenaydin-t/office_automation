@@ -57,7 +57,7 @@
 						</button>
 					</div>
 					<div data-r="grid4" class="oa-grid4">
-						<button v-for="c in statCards" :key="c.label" @click="c.go()" class="oa-statcard h-bord">
+						<button v-for="c in statCards" :key="c.label" @click="openStat(c)" class="oa-statcard h-bord">
 							<div class="oa-statcard-head">
 								<span class="oa-statcard-label">{{ c.label }}</span>
 								<div class="oa-statcard-icon" :style="{background:c.tintBg}"><span class="ico" :style="{color:c.color}">{{ c.icon }}</span></div>
@@ -283,6 +283,7 @@ export default {
 			drawerOpen: false,
 			folder: "inbox:all",
 			scope: "inbox",
+			statLabel: "",
 			search: "",
 			loading: false,
 			stats: { unseen: 0, pending: 0, overdue: 0, today: 0 },
@@ -332,28 +333,15 @@ export default {
 				{ label: "تنظیمات اتوماسیون", icon: "settings", go: () => this.routeForm("Office Automation Settings") },
 			];
 		},
-		recipientFilter() {
-			// A single value for one recipient, or an ["in", [...]] tuple when the
-			// user substitutes for delegators — mirrors the count-query scope so the
-			// drill-down list matches the number on the card.
-			const list = (this.stats && this.stats.recipients) || [this.meEmail];
-			return list.length > 1 ? ["in", list] : list[0];
-		},
 		statCards() {
-			// Each card drills into the Document Referral list filtered to match the
-			// exact number it shows (same predicates as get_dashboard_stats).
-			const rec = this.recipientFilter;
-			const open = ["in", ["Unseen", "Seen"]];
-			const today = frappe.datetime.get_today();
+			// Each card carries the stat `kind`; clicking it opens the matching
+			// referral list *inside* the Cartable (see openStat) — rendered by the
+			// same inbox list as folders, not a route out to a desk list view.
 			return [
-				{ label: "ارجاعات دیده‌نشده", value: this.stats.unseen, color: "#D97706", tintBg: "rgba(232,147,12,.14)", icon: "visibility_off", note: "نیازمند مشاهده",
-					go: () => this.routeList("Document Referral", { recipient: rec, status: "Unseen" }) },
-				{ label: "در انتظار اقدام", value: this.stats.pending, color: "#2563EB", tintBg: "rgba(37,99,235,.13)", icon: "hourglass_top", note: "در حال پیگیری",
-					go: () => this.routeList("Document Referral", { recipient: rec, status: "Seen" }) },
-				{ label: "ارجاعات معوق", value: this.stats.overdue, color: "#DC2626", tintBg: "rgba(220,38,38,.13)", icon: "running_with_errors", note: "نیازمند رسیدگی فوری",
-					go: () => this.routeList("Document Referral", { recipient: rec, is_overdue: 1, status: open }) },
-				{ label: "نامه‌های امروز", value: this.stats.today, color: "#16A34A", tintBg: "rgba(22,163,74,.13)", icon: "mark_email_unread", note: "دریافت‌شده امروز",
-					go: () => this.routeList("Document Referral", { recipient: rec, creation: [">=", today] }) },
+				{ kind: "unseen", label: "ارجاعات دیده‌نشده", value: this.stats.unseen, color: "#D97706", tintBg: "rgba(232,147,12,.14)", icon: "visibility_off", note: "نیازمند مشاهده" },
+				{ kind: "pending", label: "در انتظار اقدام", value: this.stats.pending, color: "#2563EB", tintBg: "rgba(37,99,235,.13)", icon: "hourglass_top", note: "در حال پیگیری" },
+				{ kind: "overdue", label: "ارجاعات معوق", value: this.stats.overdue, color: "#DC2626", tintBg: "rgba(220,38,38,.13)", icon: "running_with_errors", note: "نیازمند رسیدگی فوری" },
+				{ kind: "today", label: "نامه‌های امروز", value: this.stats.today, color: "#16A34A", tintBg: "rgba(22,163,74,.13)", icon: "mark_email_unread", note: "دریافت‌شده امروز" },
 			];
 		},
 		shortcuts() {
@@ -402,6 +390,7 @@ export default {
 			];
 		},
 		folderTitle() {
+			if (this.scope === "stat") return this.statLabel;
 			for (const g of this.folderGroups) for (const f of g.items) if (f.key === this.folder) return f.label;
 			return "کارتابل";
 		},
@@ -484,10 +473,15 @@ export default {
 		route(doctype) {
 			frappe.set_route("List", doctype);
 		},
-		routeList(doctype, filters) {
-			// Pass prebuilt filters to the target list view via route_options.
-			frappe.route_options = filters;
-			frappe.set_route("List", doctype);
+		openStat(card) {
+			// Open a dashboard stat's referral list *inside* the Cartable (reusing
+			// the inbox list rendering) rather than routing out to a desk list view.
+			this.view = "inbox";
+			this.scope = "stat";
+			this.statLabel = card.label;
+			this.folder = "stat:" + card.kind;
+			this._active = { scope: "stat", kind: card.kind, key: this.folder };
+			this.loadFolder();
 		},
 		routeForm(doctype) {
 			frappe.set_route("Form", doctype);
@@ -508,7 +502,15 @@ export default {
 			} catch (e) { this.pending = []; }
 		},
 		goDashboard() { this.view = "dashboard"; this.loadDashboard(); },
-		goInbox() { this.view = "inbox"; this.loadCounts(); this.loadFolder(); },
+		goInbox() {
+			// Always land on the full inbox, not a leftover stat/sub-folder view.
+			this.view = "inbox";
+			this.scope = "inbox";
+			this.folder = "inbox:all";
+			this._active = { scope: "inbox", folder: "all", key: "inbox:all" };
+			this.loadCounts();
+			this.loadFolder();
+		},
 		async goLetters() {
 			this.view = "letters";
 			try {
@@ -530,6 +532,7 @@ export default {
 			this.loading = true;
 			try {
 				if (f.scope === "inbox") this.items = await frappe.xcall(API + "get_inbox_items", { folder: f.folder || "all" });
+				else if (f.scope === "stat") this.items = await frappe.xcall(API + "get_referrals_by_stat", { kind: f.kind });
 				else if (f.scope === "outbox") this.items = await frappe.xcall(API + "get_outbox_items", { state: f.state });
 				else if (f.scope === "drafts") this.items = (await frappe.xcall(API + "get_drafts")).map((d) => ({ ...d, reference_name: d.name, reference_title: d.subject, status: "Draft" }));
 				else if (f.scope === "visibility") this.items = (await frappe.xcall(API + "get_letters_by_visibility", { visibility: f.visibility })).map((d) => ({ ...d, reference_name: d.name, reference_title: d.subject }));
@@ -540,7 +543,7 @@ export default {
 			// Drafts are editable: open the composer in edit mode instead of the
 			// read-only letter view.
 			if (this.scope === "drafts") { this.openEdit(L.reference_name || L.name); return; }
-			if (this.scope === "inbox" && L.status === "Unseen") {
+			if ((this.scope === "inbox" || this.scope === "stat") && L.status === "Unseen") {
 				try { await frappe.xcall(REF + "mark_referral_seen", { referral: L.name }); } catch (e) { /* */ }
 			}
 			this.openLetter(L.reference_name || L.name);

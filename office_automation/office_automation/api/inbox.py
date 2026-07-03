@@ -4,10 +4,12 @@
 
 import frappe
 from frappe import _
+from frappe.query_builder.functions import Count
 
 from office_automation.office_automation.permissions.delegation import get_effective_users
 
 OPEN_STATUSES = ("Unseen", "Seen")
+OPEN_STATUS_LIST = list(OPEN_STATUSES)
 
 # Inbox folder key -> referral_type value. "all" means no type filter.
 INBOX_FOLDERS = {
@@ -238,35 +240,39 @@ def get_folder_counts(user: str | None = None) -> dict:
 	"""
 	recipients = _recipients_for(user)
 
+	DR = frappe.qb.DocType("Document Referral")
+
 	# --- Inbox: open referrals grouped by type; "all" is the row total. ---
 	inbox = {key: 0 for key in INBOX_FOLDERS}
 	type_to_folder = {rt: key for key, rt in INBOX_FOLDERS.items() if rt}
-	for row in frappe.get_all(
-		"Document Referral",
-		filters={"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]},
-		fields=["referral_type", "count(name) as cnt"],
-		group_by="referral_type",
-	):
-		inbox["all"] += row.cnt
-		key = type_to_folder.get(row.referral_type)
+	inbox_rows = (
+		frappe.qb.from_(DR)
+		.select(DR.referral_type, Count(DR.name).as_("cnt"))
+		.where(DR.recipient.isin(recipients) & DR.status.isin(OPEN_STATUS_LIST))
+		.groupby(DR.referral_type)
+	).run(as_dict=True)
+	for row in inbox_rows:
+		inbox["all"] += row["cnt"]
+		key = type_to_folder.get(row["referral_type"])
 		if key:
-			inbox[key] += row.cnt
+			inbox[key] += row["cnt"]
 
 	# --- Outbox: everything sent, grouped by (outcome, status) in one pass. ---
 	outbox = {"all": 0, "in_progress": 0, "approved": 0, "rejected": 0, "returned": 0}
 	outcome_key = {"Approved": "approved", "Rejected": "rejected", "Returned": "returned"}
-	for row in frappe.get_all(
-		"Document Referral",
-		filters={"sender": ["in", recipients]},
-		fields=["outcome", "status", "count(name) as cnt"],
-		group_by="outcome, status",
-	):
-		outbox["all"] += row.cnt
-		if row.status in OPEN_STATUSES:
-			outbox["in_progress"] += row.cnt
-		key = outcome_key.get(row.outcome)
+	outbox_rows = (
+		frappe.qb.from_(DR)
+		.select(DR.outcome, DR.status, Count(DR.name).as_("cnt"))
+		.where(DR.sender.isin(recipients))
+		.groupby(DR.outcome, DR.status)
+	).run(as_dict=True)
+	for row in outbox_rows:
+		outbox["all"] += row["cnt"]
+		if row["status"] in OPEN_STATUSES:
+			outbox["in_progress"] += row["cnt"]
+		key = outcome_key.get(row["outcome"])
 		if key:
-			outbox[key] += row.cnt
+			outbox[key] += row["cnt"]
 
 	drafts = frappe.db.count("Automation Letter", {"docstatus": 0, "owner": ["in", recipients]})
 
@@ -286,18 +292,20 @@ def get_dashboard_stats(user: str | None = None) -> dict:
 	# unseen / pending / overdue all derive from the open-referral set, so a
 	# single query grouped by (status, is_overdue) covers all three.
 	unseen = pending = overdue = 0
-	for row in frappe.get_all(
-		"Document Referral",
-		filters={"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]},
-		fields=["status", "is_overdue", "count(name) as cnt"],
-		group_by="status, is_overdue",
-	):
-		if row.status == "Unseen":
-			unseen += row.cnt
-		elif row.status == "Seen":
-			pending += row.cnt
-		if row.is_overdue:
-			overdue += row.cnt
+	DR = frappe.qb.DocType("Document Referral")
+	stat_rows = (
+		frappe.qb.from_(DR)
+		.select(DR.status, DR.is_overdue, Count(DR.name).as_("cnt"))
+		.where(DR.recipient.isin(recipients) & DR.status.isin(OPEN_STATUS_LIST))
+		.groupby(DR.status, DR.is_overdue)
+	).run(as_dict=True)
+	for row in stat_rows:
+		if row["status"] == "Unseen":
+			unseen += row["cnt"]
+		elif row["status"] == "Seen":
+			pending += row["cnt"]
+		if row["is_overdue"]:
+			overdue += row["cnt"]
 
 	today = frappe.db.count(
 		"Document Referral",
@@ -310,3 +318,39 @@ def get_dashboard_stats(user: str | None = None) -> dict:
 		"today": today,
 		"recipients": recipients,
 	}
+
+
+# Dashboard stat key -> extra Document Referral filters. Each mirrors the
+# predicate counted in get_dashboard_stats so the drilled-in list matches the
+# number on the card exactly.
+STAT_FILTERS = {
+	"unseen": {"status": "Unseen"},
+	"pending": {"status": "Seen"},
+	"overdue": {"is_overdue": 1, "status": ["in", OPEN_STATUS_LIST]},
+	# ``today`` is filled in per-request (needs today's date).
+	"today": {},
+}
+
+
+@frappe.whitelist()
+def get_referrals_by_stat(kind: str, user: str | None = None) -> list[dict]:
+	"""Referral rows behind a dashboard stat card (unseen / pending / overdue /
+	today), enriched for the Cartable list — same shape as ``get_inbox_items`` so
+	the SPA can render them inline instead of routing out to a desk list view.
+	"""
+	if kind not in STAT_FILTERS:
+		frappe.throw(_("Unknown dashboard stat: {0}").format(kind))
+
+	recipients = _recipients_for(user)
+	filters = {"recipient": ["in", recipients], **STAT_FILTERS[kind]}
+	if kind == "today":
+		filters["creation"] = [">=", frappe.utils.today()]
+
+	rows = frappe.get_all(
+		"Document Referral",
+		filters=filters,
+		fields=REFERRAL_FIELDS,
+		order_by="creation desc",
+		ignore_permissions=True,
+	)
+	return _enrich(rows)
