@@ -3,6 +3,89 @@
 All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] - 2026-11-04
+
+### Fixed
+- **Thread print format crashed on every render.** Frappe 16's sandboxed Jinja
+  does not expose `frappe.utils.get_fullname`, so «چاپ نامه همراه با توضیحات
+  ارجاع» failed with *"'NoneType' object is not callable"*. Names and dates are
+  now resolved in `get_letter_thread`; dates print in Jalali with Persian digits
+  without needing the optional `persian_calendar` app.
+- **Security: stored XSS in the thread print.** Approve/reject/return notes are
+  appended with `db_set`, which bypasses Frappe's sanitizer, and print-format
+  Jinja does not autoescape. Notes are now stripped to plain text on save **and**
+  every user-supplied value in the print format is escaped (covers legacy data).
+- **The sender could mark their own sent referral as "seen".** `mark_referral_seen`
+  accepted any user with write access, which includes the sender — falsifying the
+  read receipt and blocking their own recall. Now recipient/delegate only.
+- **Approve / reject / return buttons were shown to everyone** (including the
+  sender) and **delegates could not act from the Cartable** (the UI matched on the
+  user's own email). `get_letter_detail` now returns `my_referral` — the caller's
+  open item, own first, then delegated — and the buttons follow it. A banner shows
+  when you act on behalf of someone.
+- **Opening a letter from the dashboard / stat cards / search did not mark it
+  read.** Marking seen now happens server-side in `get_letter_detail`, wherever
+  the letter is opened from (the sender opening it never marks it).
+- **Forwarding without an explicit parent didn't close your inbox item** (desk
+  "Forward (Erja)" dialog, or forwarding as a delegate). The caller's own open
+  referral is now detected automatically and closed — also for delegates.
+- **Multi-recipient Erja was N separate, non-atomic calls.** New
+  `forward_to_many` creates every referral in one transaction after validating
+  all recipients first; the Erja modal uses it.
+- **Referral attachments could not be downloaded by recipients.** The private file
+  stayed attached to the first referral only. It is now re-homed onto the
+  referenced letter, which every party of the referral tree can read.
+- **Cancelling a letter didn't persist `Cancelled`** (it was set in `on_cancel`,
+  after the DB write) **and left open referrals in recipients' inboxes.** Status is
+  set in `before_cancel`; open referrals are closed and inboxes refreshed.
+- **Recall pulled back referrals other users forwarded.** `recall_letter` now
+  only recalls the letter sender's own deliveries; per-referral recall works for
+  whoever sent that referral, and recalling a forward re-opens the forwarder's
+  own item instead of losing it.
+- **A closed letter that received a new referral stayed "Closed".** It now
+  re-opens to "In Progress".
+- **Outcome could be overwritten** by a second approve/reject/return (stale tab,
+  double click). Actioned referrals are now refused; the action dialog also
+  guards against double submit.
+- **Deleting a Delegation Rule didn't revoke access** until the 5-minute cache
+  expired. The delegatee's cache is now cleared on delete and on re-assignment.
+- Overdue reminders ignored the *Realtime Inbox Update* setting; workspace number
+  cards counted referrals you *sent* as well as received (now recipient-scoped,
+  and "Overdue" only counts open items).
+- **Desk form buttons never appeared** on Automation Letter / Delegation Rule
+  ("Add Recipient", "Submit & Refer", "Forward (Erja)", "View Referral Tree"):
+  the form `refresh` called `.classList` on `frm.page.wrapper`, which is a jQuery
+  object, and threw before adding them. Same crash fixed in both list views.
+  The referral tree dialog now shows full names, outcomes and CC tags.
+- `create_letter`/`update_letter` returned the stale in-memory status after submit.
+
+### Added
+- **Secretariat numbering (شماره‌گذاری خودکار).** A registered letter without a
+  number gets one automatically, e.g. `1405/00012` — per Jalali year, collision-
+  safe via Frappe's Series table, optional prefix. Settings: *Auto Letter Number*
+  (on by default; a patch enables it on upgraded sites) and *Letter Number Prefix*.
+  `letter_no` and `status` are no longer copied on amend.
+- **«اتمام کار» (Done) action in the Cartable** — the natural close for CC /
+  اطلاع / استحضار items that need no approve/reject decision; takes a note.
+- **«بایگانی» (Archive) inbox folder** — everything you already handled, so items
+  no longer vanish once actioned.
+- **Server-side search (جستجو).** Press Enter in either search box (or open the
+  جستجو folder) to search subject, letter number, document id and body text
+  across every letter you may read (`search_letters`, permission-aware).
+- **Public letters (عمومی).** New setting *Public Letters Visible To All Users*
+  (off by default): registered letters that are not Private and have Normal
+  confidentiality become readable — read-only — by all Office Automation users.
+  Private, Confidential and Secret letters always stay limited to their parties.
+- Cartable rows show full names, the letter number, outcome and overdue chips;
+  the referral timeline shows outcome/CC tags and the referral's attachment; the
+  letters list has a filter box; the success alert shows the new letter number.
+- Persian translations for the new messages and settings.
+
+### Tests
+- New `tests/test_cartable_v05.py` (30 tests) covering every fix above, plus a
+  print-format render test. Full suite: 64 tests. Verified end-to-end in a
+  browser against Frappe 16.18.3.
+
 ## [0.4.7] - 2026-07-03
 
 ### Fixed

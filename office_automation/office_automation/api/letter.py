@@ -5,6 +5,12 @@
 import frappe
 from frappe import _
 
+from office_automation.office_automation.doctype.document_referral.document_referral import (
+	OPEN_STATUSES,
+	link_file_to_document,
+)
+from office_automation.office_automation.permissions.delegation import get_effective_users
+
 
 @frappe.whitelist()
 def create_letter(payload: str, submit: int = 0) -> dict:
@@ -57,13 +63,16 @@ def _finalize_letter(doc, data: dict, submit) -> dict:
 	"""Shared tail for create/update: re-link uploaded files to the saved letter,
 	optionally submit (register + deliver), commit, and return the SPA result."""
 	for a in data.get("attachments") or []:
-		_link_file(a.get("file_url"), doc.name)
+		link_file_to_document(a.get("file_url"), "Automation Letter", doc.name)
 
 	if int(submit or 0):
 		doc.submit()
 
 	frappe.db.commit()
-	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+	# on_submit moves the letter Registered -> In Progress straight in the DB, so
+	# report the persisted status rather than the stale in-memory one.
+	status = frappe.db.get_value("Automation Letter", doc.name, "status")
+	return {"name": doc.name, "docstatus": doc.docstatus, "status": status, "letter_no": doc.letter_no}
 
 
 def _apply_letter_payload(doc, data: dict):
@@ -166,9 +175,16 @@ def get_letter_for_edit(name: str) -> dict:
 
 
 @frappe.whitelist()
-def get_letter_detail(name: str) -> dict:
+def get_letter_detail(name: str, mark_seen: int = 1) -> dict:
 	"""Full letter payload for the panel's letter view: header, body, attachments
-	and the referral flow (with full names, action and timestamps)."""
+	and the referral flow (with full names, action and timestamps).
+
+	Also resolves ``my_referral`` — the caller's own open referral on this letter
+	(or one addressed to someone they currently substitute for) — which drives
+	the approve / reject / return / done / forward actions in the UI. Opening the
+	letter counts as reading it, so that referral is marked ``Seen`` (unless
+	``mark_seen`` is 0), wherever the letter was opened from.
+	"""
 	letter = frappe.get_doc("Automation Letter", name)
 	letter.check_permission("read")
 
@@ -177,33 +193,65 @@ def get_letter_detail(name: str) -> dict:
 		filters={"reference_doctype": "Automation Letter", "reference_name": name},
 		fields=[
 			"name",
+			"parent_referral",
 			"sender",
 			"recipient",
 			"referral_type",
 			"action_type",
 			"instruction",
+			"attachment",
 			"status",
 			"outcome",
 			"is_cc",
+			"is_overdue",
 			"seen_on",
+			"actioned_on",
 			"creation",
 		],
 		order_by="creation asc",
 	)
+
+	user = frappe.session.user
+	effective = get_effective_users(user)
+
+	# The caller's actionable item: own first, then delegated; newest first.
+	mine = [r for r in referrals if r["recipient"] in effective and r["status"] in OPEN_STATUSES]
+	mine.sort(key=lambda r: (r["recipient"] != user, -_ts(r["creation"])))
+	my_referral = mine[0] if mine else None
+
+	if my_referral and my_referral["status"] == "Unseen" and int(mark_seen or 0):
+		frappe.get_doc("Document Referral", my_referral["name"]).mark_seen()
+		my_referral["status"] = "Seen"
+		my_referral["seen_on"] = frappe.utils.now_datetime()
+
 	# The sender may recall (unsend) a referral only while it is still unseen.
-	is_sender = letter.sender == frappe.session.user
+	is_sender = letter.sender == user
 	unseen_count = 0
+	names = _full_names({r["sender"] for r in referrals} | {r["recipient"] for r in referrals})
 	for r in referrals:
-		r["sender_name"] = frappe.utils.get_fullname(r["sender"])
-		r["recipient_name"] = frappe.utils.get_fullname(r["recipient"])
-		r["can_recall"] = bool(is_sender and r["status"] == "Unseen")
-		if r["status"] == "Unseen":
+		r["sender_name"] = names.get(r["sender"]) or r["sender"]
+		r["recipient_name"] = names.get(r["recipient"]) or r["recipient"]
+		# Anyone may pull back a referral *they* sent while it is still unread.
+		r["can_recall"] = bool(r["sender"] == user and r["status"] == "Unseen")
+		if r["status"] == "Unseen" and r["sender"] == letter.sender:
 			unseen_count += 1
 
 	return {
 		"is_sender": is_sender,
 		"can_recall": bool(is_sender and unseen_count),
 		"unseen_count": unseen_count,
+		"my_referral": (
+			{
+				"name": my_referral["name"],
+				"recipient": my_referral["recipient"],
+				"recipient_name": my_referral.get("recipient_name"),
+				"referral_type": my_referral["referral_type"],
+				"is_cc": my_referral["is_cc"],
+				"on_behalf_of": my_referral["recipient"] if my_referral["recipient"] != user else None,
+			}
+			if my_referral
+			else None
+		),
 		"name": letter.name,
 		"subject": letter.subject,
 		"letter_no": letter.letter_no,
@@ -212,6 +260,7 @@ def get_letter_detail(name: str) -> dict:
 		"sender_name": frappe.utils.get_fullname(letter.sender),
 		"body": letter.body,
 		"status": letter.status,
+		"docstatus": letter.docstatus,
 		"letter_type": letter.letter_type,
 		"confidentiality": letter.confidentiality,
 		"urgency": letter.urgency,
@@ -221,16 +270,20 @@ def get_letter_detail(name: str) -> dict:
 	}
 
 
-def _link_file(file_url: str | None, docname: str):
-	if not file_url:
-		return
-	file_name = frappe.db.get_value(
-		"File", {"file_url": file_url, "attached_to_name": ["in", ["", None]]}, "name"
+def _ts(value) -> float:
+	"""Sortable timestamp for a datetime (or datetime string)."""
+	try:
+		return frappe.utils.get_datetime(value).timestamp()
+	except Exception:
+		return 0.0
+
+
+def _full_names(users: set) -> dict:
+	"""Batch-resolve user ids to full names (one query instead of N)."""
+	users = [u for u in users if u]
+	if not users:
+		return {}
+	rows = frappe.get_all(
+		"User", filters={"name": ["in", users]}, fields=["name", "full_name"], ignore_permissions=True
 	)
-	if file_name:
-		frappe.db.set_value(
-			"File",
-			file_name,
-			{"attached_to_doctype": "Automation Letter", "attached_to_name": docname},
-			update_modified=False,
-		)
+	return {r.name: r.full_name for r in rows}

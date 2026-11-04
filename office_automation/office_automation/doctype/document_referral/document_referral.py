@@ -12,6 +12,10 @@ STATUS_DRAFT = "Draft"
 STATUS_UNSEEN = "Unseen"
 STATUS_SEEN = "Seen"
 STATUS_ACTIONED = "Actioned"
+OPEN_STATUSES = (STATUS_UNSEEN, STATUS_SEEN)
+
+# Persian labels for referral outcomes, used in notifications.
+OUTCOME_LABELS = {"Approved": "تأیید شد", "Rejected": "رد شد", "Returned": "عودت شد"}
 
 
 class DocumentReferral(Document):
@@ -204,17 +208,95 @@ def forward_document(
 
 	* Validates that the user may read the referenced document.
 	* Creates a new ``Document Referral`` row (status ``Unseen``).
-	* When forwarding *from* an inbox item (``parent_referral`` set), the parent
-	  referral is marked ``Actioned`` because the recipient has handled it by
-	  passing it on.
+	* When forwarding *from* an inbox item the parent referral is marked
+	  ``Actioned`` because the recipient has handled it by passing it on. If no
+	  ``parent_referral`` is given, the caller's own open referral on the
+	  document (if any) is used automatically, so forwarding from the desk form
+	  or the letter view closes the caller's inbox item too.
 	"""
+	names = _forward_many(
+		doc_type,
+		doc_name,
+		[recipient],
+		instruction=instruction,
+		action_type=action_type,
+		referral_type=referral_type,
+		attachment=attachment,
+		parent_referral=parent_referral,
+	)
+	frappe.db.commit()
+	return names[0]
+
+
+@frappe.whitelist()
+def forward_to_many(
+	doc_type: str,
+	doc_name: str,
+	recipients: str | list,
+	instruction: str | None = None,
+	action_type: str | None = None,
+	referral_type: str = "Action",
+	attachment: str | None = None,
+	parent_referral: str | None = None,
+) -> list[str]:
+	"""Forward a document to several recipients at once, atomically.
+
+	All referrals hang off the same parent and are created in a single
+	transaction — either every recipient receives it or none does.
+	``recipients`` is a JSON list (or a Python list) of user ids.
+	"""
+	if isinstance(recipients, str):
+		recipients = frappe.parse_json(recipients)
+	names = _forward_many(
+		doc_type,
+		doc_name,
+		recipients or [],
+		instruction=instruction,
+		action_type=action_type,
+		referral_type=referral_type,
+		attachment=attachment,
+		parent_referral=parent_referral,
+	)
+	frappe.db.commit()
+	return names
+
+
+def _forward_many(
+	doc_type: str,
+	doc_name: str,
+	recipients: list,
+	instruction: str | None = None,
+	action_type: str | None = None,
+	referral_type: str = "Action",
+	attachment: str | None = None,
+	parent_referral: str | None = None,
+) -> list[str]:
+	"""Shared engine for forward_document / forward_to_many (no commit)."""
 	if not frappe.has_permission(doc_type, doc=doc_name, ptype="read"):
 		frappe.throw(
 			_("You are not permitted to access {0} {1}.").format(doc_type, doc_name),
 			frappe.PermissionError,
 		)
 
+	# De-duplicate while preserving order; ignore blanks.
+	unique: list[str] = []
+	for r in recipients:
+		r = (r or "").strip() if isinstance(r, str) else r
+		if r and r not in unique:
+			unique.append(r)
+	if not unique:
+		frappe.throw(_("At least one recipient is required."))
+
 	sender = frappe.session.user
+	effective = get_effective_users(sender)
+
+	# Validate every recipient before creating anything, so a bad entry can't
+	# leave a half-delivered fan-out behind.
+	for recipient in unique:
+		if recipient == sender:
+			frappe.throw(_("Sender and Recipient cannot be the same user."))
+		if not frappe.db.get_value("User", recipient, "enabled"):
+			frappe.throw(_("Recipient {0} is not an active user.").format(recipient))
 
 	# Resolve the parent referral (the inbox item being acted upon), if any.
 	parent_doc = None
@@ -223,25 +305,67 @@ def forward_document(
 		# The reference doc must match the parent's reference doc.
 		if parent_doc.reference_doctype != doc_type or parent_doc.reference_name != doc_name:
 			frappe.throw(_("Parent Referral does not belong to the supplied document."))
+		# You may only branch the tree from a node addressed to (or sent by) you.
+		if (
+			parent_doc.recipient not in effective
+			and parent_doc.sender not in effective
+			and not is_privileged(sender)
+		):
+			frappe.throw(
+				_("You can only forward from a referral addressed to you."),
+				frappe.PermissionError,
+			)
+	else:
+		parent_name = find_open_referral(doc_type, doc_name, sender)
+		if parent_name:
+			parent_doc = frappe.get_doc("Document Referral", parent_name)
 
-	referral = create_referral(
-		reference_doctype=doc_type,
-		reference_name=doc_name,
-		recipient=recipient,
-		sender=sender,
-		instruction=instruction,
-		action_type=action_type,
-		referral_type=referral_type,
-		attachment=attachment,
-		parent_referral=parent_referral,
-	)
+	names = []
+	for recipient in unique:
+		referral = create_referral(
+			reference_doctype=doc_type,
+			reference_name=doc_name,
+			recipient=recipient,
+			sender=sender,
+			instruction=instruction,
+			action_type=action_type,
+			referral_type=referral_type,
+			attachment=attachment,
+			parent_referral=parent_doc.name if parent_doc else None,
+		)
+		names.append(referral.name)
 
-	# Acting on a parent referral (forwarding it onward) closes that node.
-	if parent_doc and parent_doc.recipient == sender and parent_doc.status != STATUS_ACTIONED:
+	# Acting on a parent referral (forwarding it onward) closes that node —
+	# also when the caller is the recipient's active delegate.
+	if parent_doc and parent_doc.recipient in effective and parent_doc.status != STATUS_ACTIONED:
 		parent_doc.mark_actioned()
 
-	frappe.db.commit()
-	return referral.name
+	return names
+
+
+def find_open_referral(doc_type: str, doc_name: str, user: str | None = None) -> str | None:
+	"""The caller's open (Unseen/Seen) referral on a document, if any.
+
+	Considers referrals addressed to the user and to anyone they currently
+	substitute for; the user's own item wins over a delegated one, newest first.
+	"""
+	user = user or frappe.session.user
+	effective = get_effective_users(user)
+	rows = frappe.get_all(
+		"Document Referral",
+		filters={
+			"reference_doctype": doc_type,
+			"reference_name": doc_name,
+			"recipient": ["in", effective],
+			"status": ["in", (STATUS_UNSEEN, STATUS_SEEN)],
+		},
+		fields=["name", "recipient"],
+		order_by="creation desc",
+	)
+	if not rows:
+		return None
+	own = [r for r in rows if r.recipient == user]
+	return (own or rows)[0].name
 
 
 def create_referral(
@@ -282,6 +406,14 @@ def create_referral(
 	)
 	referral.insert(ignore_permissions=True)
 
+	# A file uploaded for the referral is private and unattached, so only its
+	# uploader could download it. Attach it to the referenced document, which
+	# every party of the referral tree can read.
+	if attachment:
+		link_file_to_document(
+			attachment, reference_doctype, reference_name, also_from=("Document Referral", referral.name)
+		)
+
 	# Bubble the reference document into an "In Progress" state if applicable.
 	_touch_reference_status(reference_doctype, reference_name)
 
@@ -290,6 +422,46 @@ def create_referral(
 		notify_recipient(referral)
 
 	return referral
+
+
+def link_file_to_document(
+	file_url: str | None, doctype: str, docname: str, also_from: tuple[str, str] | None = None
+):
+	"""Attach a freshly uploaded (still unattached) File to a document.
+
+	Files uploaded from the Cartable are private and unattached until the
+	letter/referral is saved; while unattached only the uploader can open them.
+	Linking them to the document lets everyone who can read that document
+	download the file. Only the uploader's own unattached files are claimed, so
+	a caller cannot hijack someone else's upload by guessing its URL.
+	"""
+	if not file_url:
+		return
+	owner = {} if is_privileged(frappe.session.user) else {"owner": frappe.session.user}
+	file_name = frappe.db.get_value(
+		"File", {"file_url": file_url, "attached_to_name": ["in", ["", None]], **owner}, "name"
+	)
+	if not file_name and also_from:
+		# Frappe auto-attaches an Attach-field file to the record that holds it
+		# (here: a single referral), which would hide it from the other
+		# recipients of a multi-recipient forward. Re-home it onto the document.
+		file_name = frappe.db.get_value(
+			"File",
+			{
+				"file_url": file_url,
+				"attached_to_doctype": also_from[0],
+				"attached_to_name": also_from[1],
+				**owner,
+			},
+			"name",
+		)
+	if file_name:
+		frappe.db.set_value(
+			"File",
+			file_name,
+			{"attached_to_doctype": doctype, "attached_to_name": docname},
+			update_modified=False,
+		)
 
 
 def _reference_title(reference_doctype: str, reference_name: str) -> str:
@@ -395,11 +567,15 @@ def _close_todos(referral_name: str):
 
 
 def _touch_reference_status(doc_type: str, doc_name: str):
-	"""Best-effort: move an Automation Letter to 'In Progress' once referred."""
+	"""Best-effort: move an Automation Letter to 'In Progress' once referred.
+
+	A ``Closed`` letter that receives a new referral is re-opened, since there
+	is again open work on it.
+	"""
 	if doc_type != "Automation Letter":
 		return
 	current = frappe.db.get_value(doc_type, doc_name, "status")
-	if current == "Registered":
+	if current in ("Registered", "Closed"):
 		frappe.db.set_value(doc_type, doc_name, "status", "In Progress", update_modified=False)
 
 
@@ -428,6 +604,8 @@ def get_referral_tree(doc_type: str, doc_name: str) -> list[dict]:
 			"action_type",
 			"instruction",
 			"status",
+			"outcome",
+			"is_cc",
 			"seen_on",
 			"actioned_on",
 			"creation",
@@ -438,8 +616,22 @@ def get_referral_tree(doc_type: str, doc_name: str) -> list[dict]:
 	nodes: dict[str, dict] = {}
 	roots: list[dict] = []
 
+	users = list({r.sender for r in rows} | {r.recipient for r in rows})
+	full_names = (
+		{
+			u.name: u.full_name
+			for u in frappe.get_all(
+				"User", filters={"name": ["in", users]}, fields=["name", "full_name"], ignore_permissions=True
+			)
+		}
+		if users
+		else {}
+	)
+
 	for row in rows:
 		row["children"] = []
+		row["sender_name"] = full_names.get(row.sender) or row.sender
+		row["recipient_name"] = full_names.get(row.recipient) or row.recipient
 		nodes[row["name"]] = row
 
 	for row in rows:
@@ -454,29 +646,44 @@ def get_referral_tree(doc_type: str, doc_name: str) -> list[dict]:
 
 @frappe.whitelist()
 def mark_referral_seen(referral: str):
-	"""Mark a referral as seen — used by the Cartable when an item is opened."""
+	"""Mark a referral as seen — used by the Cartable when an item is opened.
+
+	Only the recipient (or their active delegate) may do this. In particular the
+	*sender* must not: marking their own sent item as seen would both falsify
+	the read receipt and block them from recalling it.
+	"""
 	doc = frappe.get_doc("Document Referral", referral)
-	if doc.recipient != frappe.session.user and not frappe.has_permission(
-		"Document Referral", doc=doc, ptype="write"
-	):
+	if doc.recipient not in get_effective_users(frappe.session.user):
 		frappe.throw(_("You can only update your own inbox items."), frappe.PermissionError)
 	doc.mark_seen()
 	return doc.status
 
 
 @frappe.whitelist()
-def mark_referral_actioned(referral: str, outcome: str | None = None):
-	"""Mark a referral as actioned (handled / completed), optionally with an outcome."""
+def mark_referral_actioned(referral: str, outcome: str | None = None, note: str | None = None):
+	"""Mark a referral as actioned — «اتمام کار» (handled / completed / filed).
+
+	The natural close for informational items (CC / اطلاع / استحضار) that need
+	no approve/reject decision. ``outcome`` is optional and restricted to the
+	known outcomes; an optional ``note`` is appended like the other actions.
+	"""
+	if outcome and outcome not in ("Approved", "Rejected", "Returned"):
+		frappe.throw(_("Invalid outcome {0}.").format(outcome))
 	doc = _get_own_referral(referral)
+	if doc.status == STATUS_ACTIONED:
+		return doc.status
+	if note:
+		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
 	doc.mark_actioned(outcome=outcome)
 	_maybe_close_reference(doc.reference_doctype, doc.reference_name)
+	frappe.db.commit()
 	return doc.status
 
 
 @frappe.whitelist()
 def approve_referral(referral: str, note: str | None = None):
 	"""Recipient approves the referral (Outbox -> Approved for the sender)."""
-	doc = _get_own_referral(referral)
+	doc = _get_own_referral(referral, require_open=True)
 	if note:
 		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
 	doc.mark_actioned(outcome="Approved")
@@ -489,7 +696,7 @@ def approve_referral(referral: str, note: str | None = None):
 @frappe.whitelist()
 def reject_referral(referral: str, note: str | None = None):
 	"""Recipient rejects / sends back the referral (Outbox -> Rejected)."""
-	doc = _get_own_referral(referral)
+	doc = _get_own_referral(referral, require_open=True)
 	if note:
 		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
 	doc.mark_actioned(outcome="Rejected")
@@ -509,7 +716,7 @@ def return_referral(referral: str, note: str | None = None):
 	for revision/clarification rather than approved or rejected outright. An
 	optional note is appended to the instruction and the sender is notified.
 	"""
-	doc = _get_own_referral(referral)
+	doc = _get_own_referral(referral, require_open=True)
 	if note:
 		doc.db_set("instruction", _append_note(doc.instruction, note), update_modified=False)
 	doc.mark_actioned(outcome="Returned")
@@ -536,9 +743,15 @@ def recall_letter(reference_name: str, reference_doctype: str = "Automation Lett
 	letter = frappe.get_doc(reference_doctype, reference_name)
 	_assert_is_sender(letter.get("sender"))
 
+	# Only the letter's own deliveries (sent by its sender) are pulled back —
+	# referrals other users forwarded further down the tree are theirs to recall.
 	referrals = frappe.get_all(
 		"Document Referral",
-		filters={"reference_doctype": reference_doctype, "reference_name": reference_name},
+		filters={
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+			"sender": letter.get("sender"),
+		},
 		fields=["name", "status"],
 	)
 	unread = [r["name"] for r in referrals if r["status"] == STATUS_UNSEEN]
@@ -569,10 +782,39 @@ def recall_referral(referral: str) -> dict:
 		frappe.throw(_("This item has already been opened and can no longer be recalled."))
 
 	reference_doctype, reference_name = doc.reference_doctype, doc.reference_name
+	parent = doc.parent_referral
 	_recall_single(referral)
+	_maybe_reopen_parent(parent)
 	reverted = _maybe_revert_to_draft(reference_doctype, reference_name)
 	frappe.db.commit()
 	return {"reverted_to_draft": reverted}
+
+
+def _maybe_reopen_parent(parent_name: str | None):
+	"""Undo the implicit close of a forwarded inbox item when its forward is recalled.
+
+	Forwarding marks the forwarder's own referral ``Actioned``. If they recall the
+	only child they created from it (and it carried no explicit outcome), the
+	item goes back to their inbox as ``Seen`` so the work is not lost.
+	"""
+	if not parent_name:
+		return
+	parent = frappe.db.get_value(
+		"Document Referral", parent_name, ["name", "status", "outcome", "recipient"], as_dict=True
+	)
+	if not parent or parent.status != STATUS_ACTIONED or parent.outcome not in (None, "", "Pending"):
+		return
+	if parent.recipient not in get_effective_users(frappe.session.user):
+		return
+	if frappe.db.exists("Document Referral", {"parent_referral": parent_name}):
+		return
+	frappe.db.set_value(
+		"Document Referral",
+		parent_name,
+		{"status": STATUS_SEEN, "actioned_on": None},
+		update_modified=False,
+	)
+	_publish_inbox_update(parent.recipient, {"referral": parent_name, "reopened": True})
 
 
 def _assert_is_sender(sender: str | None):
@@ -660,7 +902,7 @@ def _notify_recall(referral):
 		frappe.log_error(title="office_automation: recall notification failed")
 
 
-def _get_own_referral(referral: str):
+def _get_own_referral(referral: str, require_open: bool = False):
 	"""Load a referral the current user is entitled to ACT ON (approve / reject /
 	return / mark-actioned).
 
@@ -682,10 +924,18 @@ def _get_own_referral(referral: str):
 			_("Only the recipient (or their delegate) can action this referral."),
 			frappe.PermissionError,
 		)
+	if require_open and doc.status == STATUS_ACTIONED:
+		# e.g. a stale tab or a double click: never overwrite a recorded outcome.
+		frappe.throw(_("This referral has already been actioned."))
 	return doc
 
 
 def _append_note(existing: str | None, note: str) -> str:
+	# db_set bypasses Frappe's XSS sanitizer, so strip markup here — the note is
+	# plain text and is rendered in print formats and the desk.
+	note = frappe.utils.strip_html_tags(note or "").strip()
+	if not note:
+		return existing or ""
 	stamp = f"[{frappe.utils.get_fullname(frappe.session.user)}] {note}"
 	return f"{existing}\n{stamp}" if existing else stamp
 
@@ -693,7 +943,12 @@ def _append_note(existing: str | None, note: str) -> str:
 def _notify_outcome(doc, outcome: str):
 	"""Tell the original sender that their referral was approved/rejected."""
 	try:
-		subject = _("Referral {0}: {1} {2}").format(outcome, doc.reference_doctype, doc.reference_name)
+		reference_title = _reference_title(doc.reference_doctype, doc.reference_name)
+		subject = _("Referral {0} by {1}: {2}").format(
+			_(OUTCOME_LABELS.get(outcome, outcome)),
+			frappe.utils.get_fullname(doc.recipient),
+			reference_title,
+		)
 		frappe.get_doc(
 			{
 				"doctype": "Notification Log",

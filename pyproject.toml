@@ -24,6 +24,9 @@ name = "office_automation"
 [tool.ruff]
 line-length = 110
 target-version = "py313"
+# Newer ruff also formats code blocks inside Markdown; docs snippets are not app
+# code (and are meant for copy-paste into `bench console`), so leave them be.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = [

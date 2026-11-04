@@ -29,6 +29,9 @@ def _fetch_referrals(doc_type: str, doc_name: str) -> list[dict]:
 			"action_type",
 			"instruction",
 			"status",
+			"outcome",
+			"is_cc",
+			"referral_type",
 			"seen_on",
 			"actioned_on",
 			"creation",
@@ -73,10 +76,55 @@ def get_letter_thread(doc_name: str) -> dict:
 	letter.check_permission("read")
 
 	rows = _fetch_referrals("Automation Letter", doc_name)
+	# Resolve display values here: Frappe's sandboxed Jinja does not expose
+	# ``frappe.utils.get_fullname`` (calling it crashed the whole print), and
+	# Jalali dates are rendered without needing the optional persian_calendar.
+	names = _full_names({letter.sender} | {r.sender for r in rows} | {r.recipient for r in rows})
+	for r in rows:
+		r["sender_name"] = names.get(r.sender) or r.sender
+		r["recipient_name"] = names.get(r.recipient) or r.recipient
+		r["creation_fa"] = jalali_str(r.creation, with_time=True)
+		r["actioned_on_fa"] = jalali_str(r.actioned_on, with_time=True) if r.actioned_on else ""
 	tree = _build_tree(rows)
 	referrals = _flatten(tree)
 
-	return {"letter": letter, "tree": tree, "referrals": referrals}
+	return {
+		"letter": letter,
+		"sender_name": names.get(letter.sender) or letter.sender,
+		"date_fa": jalali_str(letter.date),
+		"tree": tree,
+		"referrals": referrals,
+	}
+
+
+FA_DIGITS = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
+
+
+def jalali_str(value, with_time: bool = False) -> str:
+	"""Format a date/datetime as a Jalali string with Persian digits,
+	e.g. ``۱۴۰۵/۰۸/۱۲`` or ``۱۴۰۵/۰۸/۱۲ ۱۴:۳۰``."""
+	from office_automation.office_automation.doctype.automation_letter.automation_letter import (
+		gregorian_to_jalali,
+	)
+
+	if not value:
+		return ""
+	dt = frappe.utils.get_datetime(value)
+	jy, jm, jd = gregorian_to_jalali(dt.year, dt.month, dt.day)
+	out = f"{jy}/{jm:02d}/{jd:02d}"
+	if with_time:
+		out += f" {dt.hour:02d}:{dt.minute:02d}"
+	return out.translate(FA_DIGITS)
+
+
+def _full_names(users: set) -> dict:
+	users = [u for u in users if u]
+	if not users:
+		return {}
+	rows = frappe.get_all(
+		"User", filters={"name": ["in", users]}, fields=["name", "full_name"], ignore_permissions=True
+	)
+	return {r.name: r.full_name for r in rows}
 
 
 @frappe.whitelist()
@@ -91,6 +139,8 @@ def get_letter_thread_api(doc_name: str) -> dict:
 			"letter_no": letter.letter_no,
 			"date": letter.date,
 			"sender": letter.sender,
+			"sender_name": thread["sender_name"],
+			"date_fa": thread["date_fa"],
 			"body": letter.body,
 			"status": letter.status,
 		},

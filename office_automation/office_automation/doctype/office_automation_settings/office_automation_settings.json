@@ -15,7 +15,12 @@
   "column_break_sla",
   "notify_on_overdue",
   "letters_section",
-  "default_letter_type"
+  "default_letter_type",
+  "column_break_letters",
+  "auto_letter_number",
+  "letter_number_prefix",
+  "visibility_section",
+  "public_letters_visible"
  ],
  "fields": [
   {
@@ -83,12 +88,42 @@
    "fieldtype": "Link",
    "label": "Default Letter Type",
    "options": "Letter Type"
+  },
+  {
+   "fieldname": "column_break_letters",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Assign the secretariat number (شماره نامه) automatically when a letter is registered (submitted) without one, e.g. 1405/00012. The counter restarts every Jalali year.",
+   "fieldname": "auto_letter_number",
+   "fieldtype": "Check",
+   "label": "Auto Letter Number (شماره‌گذاری خودکار)"
+  },
+  {
+   "depends_on": "auto_letter_number",
+   "description": "Optional text placed before the number, e.g. «م-» gives م-1405/00012.",
+   "fieldname": "letter_number_prefix",
+   "fieldtype": "Data",
+   "label": "Letter Number Prefix"
+  },
+  {
+   "fieldname": "visibility_section",
+   "fieldtype": "Section Break",
+   "label": "Visibility (عمومی / خصوصی)"
+  },
+  {
+   "default": "0",
+   "description": "When enabled, registered letters that are NOT marked Private and whose confidentiality is Normal can be read by every Office Automation user (the «عمومی» folder). Private, Confidential and Secret letters always stay limited to their parties.",
+   "fieldname": "public_letters_visible",
+   "fieldtype": "Check",
+   "label": "Public Letters Visible To All Users"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-28 00:00:00.000000",
+ "modified": "2026-11-03 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Office Automation",
  "name": "Office Automation Settings",

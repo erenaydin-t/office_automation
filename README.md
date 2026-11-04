@@ -20,7 +20,11 @@ compliant so it can be dropped onto any Frappe v16 bench.
 | محرمانگی / فوریت | Confidentiality / Urgency | Classification fields with UI highlighting |
 | تأیید / رد | Approve / Reject | Recipient outcome that drives the sender's Outbox folders |
 | جانشینی / تفویض اختیار | Delegation | **Delegation Rule** + permission hooks |
-| هامش‌نویسی | Margin notes / endorsements | Thread Print Format (Jinja + `get_pdf`) |
+| توضیحات ارجاع | Margin notes / endorsements | Thread Print Format (Jinja + `get_pdf`), Jalali dates |
+| شماره‌گذاری دبیرخانه | Secretariat numbering | Auto `1405/00012`-style number on registration, per Jalali year |
+| اتمام کار / بایگانی | Done / archive | Close informational items; handled items stay findable in the Archive folder |
+| جستجو | Search | Permission-aware search over subject, number, id and body |
+| عمومی / خصوصی | Public / private letters | Optional read-only visibility of public letters to all users |
 
 ## Notifications, SLA & administration
 
@@ -31,7 +35,8 @@ compliant so it can be dropped onto any Frappe v16 bench.
   *Overdue After (Days)* and can send a reminder. Surfaced via the `is_overdue`
   field and the **Overdue Referrals** number card.
 - **Office Automation Settings** — a singleton controlling ToDo / email /
-  realtime / overdue behavior.
+  realtime / overdue behavior, the default letter type, secretariat
+  auto-numbering (+ prefix) and public-letter visibility.
 - **Workspace** — module landing page with three number cards (Unseen / Pending
   / Overdue) plus shortcuts and link cards.
 - **Fixtures** — the two custom roles are exported as fixtures; standard records

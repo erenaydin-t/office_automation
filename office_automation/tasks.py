@@ -52,8 +52,12 @@ def flag_overdue_referrals():
 
 def _notify_overdue(ref):
 	try:
-		subject = _("Overdue referral awaiting your action: {0} {1}").format(
-			ref.reference_doctype, ref.reference_name
+		from office_automation.office_automation.doctype.document_referral.document_referral import (
+			_reference_title,
+		)
+
+		subject = _("Overdue referral awaiting your action: {0}").format(
+			_reference_title(ref.reference_doctype, ref.reference_name)
 		)
 		frappe.get_doc(
 			{
@@ -65,11 +69,11 @@ def _notify_overdue(ref):
 				"document_name": ref.name,
 			}
 		).insert(ignore_permissions=True)
-		frappe.publish_realtime(
-			event="oa_inbox_update",
-			message={"referral": ref.name, "subject": subject, "overdue": True},
-			user=ref.recipient,
-			after_commit=True,
+		# Honours the "Realtime Inbox Update" setting like every other flow.
+		from office_automation.office_automation.doctype.document_referral.document_referral import (
+			_publish_inbox_update,
 		)
+
+		_publish_inbox_update(ref.recipient, {"referral": ref.name, "subject": subject, "overdue": True})
 	except Exception:
 		frappe.log_error(title="office_automation: overdue notification failed")

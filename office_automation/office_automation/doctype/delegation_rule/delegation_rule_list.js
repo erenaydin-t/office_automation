@@ -51,7 +51,7 @@
 		onload(listview) {
 			injectStyle();
 			const wrapper = listview && listview.page && listview.page.wrapper;
-			if (wrapper) wrapper.classList.add("oa-list");
+			if (wrapper) $(wrapper).addClass("oa-list"); // jQuery or DOM node
 		},
 	};
 })();

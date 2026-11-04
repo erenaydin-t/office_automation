@@ -62,7 +62,9 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Letter No",
-   "unique": 1
+   "unique": 1,
+   "no_copy": 1,
+   "description": "Assigned automatically on registration (submit) when left blank."
   },
   {
    "fieldname": "letter_type",
@@ -100,7 +102,8 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nRegistered\nIn Progress\nClosed\nCancelled",
-   "read_only": 1
+   "read_only": 1,
+   "no_copy": 1
   },
   {
    "fieldname": "classification_section",
@@ -220,7 +223,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-28 00:00:00.000000",
+ "modified": "2026-11-03 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Office Automation",
  "name": "Automation Letter",

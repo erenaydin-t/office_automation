@@ -8,7 +8,9 @@
 frappe.ui.form.on("Delegation Rule", {
 	refresh(frm) {
 		office_automation_inject_template_style();
-		if (frm.page && frm.page.wrapper) frm.page.wrapper.classList.add("oa-form");
+		// frm.page.wrapper is a jQuery object (no .classList): use $() so this
+		// never throws and aborts the rest of refresh (custom buttons).
+		if (frm.page && frm.page.wrapper) $(frm.page.wrapper).addClass("oa-form");
 	},
 });
 

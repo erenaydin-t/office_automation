@@ -7,3 +7,4 @@
 office_automation.patches.v0_1.persianize_masters
 office_automation.patches.v0_1.grant_oa_user_role
 office_automation.patches.v0_2.remove_inbox_redirect_hack
+office_automation.patches.v0_5.enable_auto_letter_number

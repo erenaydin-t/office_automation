@@ -21,6 +21,11 @@ INBOX_FOLDERS = {
 	"info": "Info",
 }
 
+# The "done" (archive) folder can grow without bound; keep it to a sane window.
+DONE_FOLDER_LIMIT = 200
+SEARCH_LIMIT = 50
+OUTBOX_LIMIT = 500
+
 REFERRAL_FIELDS = [
 	"name",
 	"reference_doctype",
@@ -35,6 +40,8 @@ REFERRAL_FIELDS = [
 	"is_cc",
 	"is_overdue",
 	"parent_referral",
+	"attachment",
+	"actioned_on",
 	"creation",
 	"modified",
 ]
@@ -57,20 +64,37 @@ def _enrich(rows: list[dict]) -> list[dict]:
 		if title_field != "name":
 			fields.append(f"{title_field} as _title")
 		if doctype == "Automation Letter":
-			fields += ["urgency", "confidentiality", "is_private", "date as letter_date"]
+			fields += ["urgency", "confidentiality", "is_private", "date as letter_date", "letter_no"]
 		records = frappe.get_all(
 			doctype, filters={"name": ["in", list(names)]}, fields=fields, ignore_permissions=True
 		)
 		for rec in records:
 			meta_map[(doctype, rec["name"])] = rec
 
+	users = {row.get("sender") for row in rows} | {row.get("recipient") for row in rows}
+	users.discard(None)
+	full_names = {}
+	if users:
+		full_names = {
+			u.name: u.full_name
+			for u in frappe.get_all(
+				"User",
+				filters={"name": ["in", list(users)]},
+				fields=["name", "full_name"],
+				ignore_permissions=True,
+			)
+		}
+
 	for row in rows:
+		row["sender_name"] = full_names.get(row.get("sender")) or row.get("sender")
+		row["recipient_name"] = full_names.get(row.get("recipient")) or row.get("recipient")
 		rec = meta_map.get((row["reference_doctype"], row["reference_name"]), {})
 		row["reference_title"] = rec.get("_title") or row["reference_name"]
 		row["urgency"] = rec.get("urgency")
 		row["confidentiality"] = rec.get("confidentiality")
 		row["is_private"] = rec.get("is_private")
 		row["letter_date"] = rec.get("letter_date")
+		row["letter_no"] = rec.get("letter_no")
 	return rows
 
 
@@ -85,30 +109,39 @@ def _recipients_for(user: str | None) -> list[str]:
 # Inbox (received)
 # --------------------------------------------------------------------------- #
 @frappe.whitelist()
-def get_inbox_items(
-	user: str | None = None, folder: str = "all", limit: int | None = None
-) -> list[dict]:
-	"""Open inbox items for the user, optionally filtered by folder.
+def get_inbox_items(user: str | None = None, folder: str = "all", limit: int | None = None) -> list[dict]:
+	"""Inbox items for the user, optionally filtered by folder.
 
-	``folder`` is one of: all, order, followup, action, notification, info.
+	``folder`` is one of: all, order, followup, action, notification, info —
+	the open (not yet actioned) items — or ``done``: items the user already
+	handled (approved / rejected / returned / forwarded / marked done), newest
+	first, so nothing disappears for good once it leaves the Cartable.
 	``limit`` caps the number of rows (e.g. the dashboard preview needs only a
-	handful); omit it to return the full folder.
-	Returns ``Document Referral`` rows where the user (or a delegator they
-	substitute for) is the recipient and the status is not ``Actioned``.
+	handful); omit it to return the full folder (``done`` is capped at
+	``DONE_FOLDER_LIMIT``).
+	Rows are ``Document Referral`` records where the user (or a delegator they
+	substitute for) is the recipient.
 	"""
 	recipients = _recipients_for(user)
-	filters = {"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]}
+	limit = int(limit) if limit else 0
 
-	referral_type = INBOX_FOLDERS.get(folder)
-	if referral_type:
-		filters["referral_type"] = referral_type
+	if folder == "done":
+		filters = {"recipient": ["in", recipients], "status": "Actioned"}
+		order_by = "actioned_on desc, creation desc"
+		limit = limit or DONE_FOLDER_LIMIT
+	else:
+		filters = {"recipient": ["in", recipients], "status": ["in", OPEN_STATUSES]}
+		order_by = "creation desc"
+		referral_type = INBOX_FOLDERS.get(folder)
+		if referral_type:
+			filters["referral_type"] = referral_type
 
 	rows = frappe.get_all(
 		"Document Referral",
 		filters=filters,
 		fields=REFERRAL_FIELDS,
-		order_by="creation desc",
-		limit_page_length=int(limit) if limit else 0,
+		order_by=order_by,
+		limit=limit,
 		ignore_permissions=True,
 	)
 	return _enrich(rows)
@@ -166,6 +199,7 @@ def get_outbox_items(user: str | None = None, state: str = "all") -> list[dict]:
 		filters=filters,
 		fields=REFERRAL_FIELDS,
 		order_by="creation desc",
+		limit=OUTBOX_LIMIT,
 		ignore_permissions=True,
 	)
 	return _enrich(rows)
@@ -224,7 +258,7 @@ def get_letters_by_visibility(visibility: str = "public") -> list[dict]:
 			"modified",
 		],
 		order_by="modified desc",
-		limit_page_length=0,
+		limit=500,
 	)
 
 
@@ -354,3 +388,63 @@ def get_referrals_by_stat(kind: str, user: str | None = None) -> list[dict]:
 		ignore_permissions=True,
 	)
 	return _enrich(rows)
+
+
+# --------------------------------------------------------------------------- #
+# Search (جستجو)
+# --------------------------------------------------------------------------- #
+@frappe.whitelist()
+def search_letters(query: str, limit: int | None = None) -> list[dict]:
+	"""Full-text-ish search over the letters the user may read.
+
+	Matches subject, secretariat number (letter_no), document id and body text.
+	Uses ``frappe.get_list`` so the delegation-aware permission rules apply —
+	callers only ever find letters they are entitled to see.
+	"""
+	q = (query or "").strip()
+	if len(q) < 2:
+		return []
+	# Escape LIKE wildcards so a literal %/_ in the query matches itself.
+	like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+	limit = min(int(limit or SEARCH_LIMIT), 200)
+	rows = frappe.get_list(
+		"Automation Letter",
+		filters={"docstatus": ["!=", 2]},
+		or_filters=[
+			["subject", "like", like],
+			["letter_no", "like", like],
+			["name", "like", like],
+			["body", "like", like],
+		],
+		fields=[
+			"name",
+			"subject",
+			"letter_no",
+			"date",
+			"letter_type",
+			"urgency",
+			"confidentiality",
+			"is_private",
+			"status",
+			"docstatus",
+			"sender",
+			"modified",
+		],
+		order_by="modified desc",
+		limit=limit,
+	)
+	names = {}
+	senders = list({r.sender for r in rows if r.sender})
+	if senders:
+		names = {
+			u.name: u.full_name
+			for u in frappe.get_all(
+				"User",
+				filters={"name": ["in", senders]},
+				fields=["name", "full_name"],
+				ignore_permissions=True,
+			)
+		}
+	for r in rows:
+		r["sender_name"] = names.get(r.sender) or r.sender
+	return rows

@@ -443,7 +443,7 @@
 .oa-panel .oa-attach-ico { font-size: 24px; color: var(--primary); }
 .oa-panel .oa-attach-name { font-size: 12.5px; font-weight: 600; }
 .oa-panel .oa-attach-dl { font-size: 19px; color: var(--on-faint); }
-.oa-panel .oa-actionbar { display: flex; gap: 10px; padding: 18px 30px; border-top: 1px solid var(--outline-soft); background: var(--surface-1); }
+.oa-panel .oa-actionbar { display: flex; flex-wrap: wrap; gap: 10px; padding: 18px 30px; border-top: 1px solid var(--outline-soft); background: var(--surface-1); }
 .oa-panel .oa-act-btn {
 	display: flex; align-items: center; gap: 7px; height: 42px; padding: 0 18px;
 	border-radius: 12px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
@@ -454,6 +454,9 @@
 .oa-panel .oa-act-reject { border: 1px solid rgba(220, 38, 38, .4); background: rgba(220, 38, 38, .08); color: #dc2626; }
 .oa-panel .oa-act-return { border: 1px solid rgba(2, 132, 199, .4); background: rgba(2, 132, 199, .1); color: #0284c7; }
 .oa-panel .oa-act-recall { border: 1px solid rgba(217, 119, 6, .45); background: rgba(217, 119, 6, .1); color: #d97706; }
+.oa-panel .oa-act-done { border: 1px solid rgba(100, 116, 139, .4); background: rgba(100, 116, 139, .1); color: #475569; }
+.oa-panel .oa-onbehalf { display: flex; align-items: center; gap: 8px; margin: 0 30px 12px; padding: 9px 12px; border-radius: 10px; font-size: 12.5px; background: rgba(124, 58, 237, .09); color: #6d28d9; }
+.oa-panel .oa-onbehalf .ico { font-size: 18px; }
 .oa-panel .oa-printbtn { width: 42px; height: 42px; border: 1px solid var(--outline-soft); border-radius: 12px; background: var(--surface); color: var(--on-variant); cursor: pointer; }
 .oa-panel .oa-printbtn .ico { font-size: 19px; }
 .oa-panel .oa-timeline { background: var(--surface); border: 1px solid var(--outline-soft); border-radius: 20px; box-shadow: var(--elev1); overflow: hidden; position: sticky; top: 10px; }
@@ -473,6 +476,11 @@
 .oa-panel .oa-tl-recipient { font-size: 12.5px; font-weight: 700; color: var(--on-surface); }
 .oa-panel .oa-tl-instruction { margin-top: 8px; font-size: 12px; color: var(--on-variant); background: var(--surface-1); border-radius: 10px; padding: 8px 11px; line-height: 1.7; }
 .oa-panel .oa-tl-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.oa-panel .oa-tl-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.oa-panel .oa-tl-tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--on-variant); }
+.oa-panel .oa-tl-attach { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--primary); text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oa-panel .oa-tl-attach:hover { text-decoration: underline; }
+.oa-panel .oa-tl-attach .ico { font-size: 16px; }
 .oa-panel .oa-tl-time { font-size: 10.5px; color: var(--on-faint); direction: ltr; text-align: right; }
 .oa-panel .oa-tl-recall { display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border: 1px solid rgba(217, 119, 6, .4); border-radius: 8px; background: rgba(217, 119, 6, .08); color: #d97706; font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 .oa-panel .oa-tl-recall .ico { font-size: 14px; }

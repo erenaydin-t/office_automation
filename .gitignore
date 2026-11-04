@@ -14,3 +14,5 @@ __pycache__
 .pre-commit-cache
 ui/
 *.dc.html
+# bench build output (generated on deploy)
+office_automation/public/dist/

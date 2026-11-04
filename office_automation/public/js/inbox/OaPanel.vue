@@ -13,7 +13,7 @@
 			</div>
 			<div data-r="topsearch" class="oa-topsearch">
 				<span class="ico">search</span>
-				<input v-model="search" class="oa-searchinput" placeholder="جستجوی نامه، شماره، فرستنده…" aria-label="جستجو" />
+				<input v-model="search" class="oa-searchinput" placeholder="جستجوی نامه، شماره، فرستنده…" aria-label="جستجو" @keydown.enter="runSearch()" />
 			</div>
 			<div class="oa-spacer"></div>
 			<div data-r="profchip" class="oa-profchip">
@@ -88,7 +88,7 @@
 								<div class="oa-avatar oa-avatar-40" :style="{background:avatarColor(row.sender)}">{{ initials(row.sender) }}</div>
 								<div class="oa-listrow-main">
 									<div class="oa-listrow-title">{{ row.reference_title }}</div>
-									<div class="oa-listrow-sub">{{ row.sender }}</div>
+									<div class="oa-listrow-sub">{{ row.sender_name || row.sender }}</div>
 								</div>
 								<span class="oa-chip oa-chip-ref" :style="refChip(row.referral_type)">{{ faType(row.referral_type) }}</span>
 								<span class="oa-time">{{ shortDate(row.creation) }}</span>
@@ -123,7 +123,7 @@
 							<div class="oa-spacer"></div>
 							<div data-r="inboxsearch" class="oa-inboxsearch">
 								<span class="ico">search</span>
-								<input v-model="search" class="oa-searchinput" placeholder="جستجو در کارتابل…" aria-label="جستجو در کارتابل" />
+								<input v-model="search" class="oa-searchinput" placeholder="جستجو در کارتابل…" title="Enter: جستجو در همهٔ نامه‌ها (موضوع، شماره، متن)" aria-label="جستجو در کارتابل" @keydown.enter="runSearch()" />
 							</div>
 							<button @click="openCompose()" class="oa-primary-btn-sm h-primary"><span class="ico">add</span>نامه جدید</button>
 						</div>
@@ -137,13 +137,15 @@
 										<span class="oa-mailrow-subject" :class="{ unseen: L.status==='Unseen' }">{{ L.reference_title || L.subject }}</span>
 										<span v-if="L.referral_type" class="oa-chip-ref-inline" :style="refChip(L.referral_type)">{{ faType(L.referral_type) }}</span>
 										<span v-if="L.urgency && L.urgency!=='Normal'" class="oa-chip oa-chip-urg"><span class="ico">bolt</span>{{ faUrg(L.urgency) }}</span>
+										<span v-if="L.outcome && L.outcome!=='Pending'" class="oa-chip-ref-inline" :style="outcomeChip(L.outcome)">{{ faOutcome(L.outcome) }}</span>
+										<span v-if="L.is_overdue && L.status!=='Actioned'" class="oa-chip oa-chip-urg"><span class="ico">running_with_errors</span>معوق</span>
 									</div>
-									<div class="oa-mailrow-sender">{{ scope==='outbox' ? ('به ' + L.recipient) : L.sender }}</div>
+									<div class="oa-mailrow-sender">{{ rowParty(L) }}</div>
 									<div v-if="L.instruction" class="oa-mailrow-instruction">{{ L.instruction }}</div>
 								</div>
 								<div class="oa-mailrow-meta">
 									<span class="oa-mailrow-time">{{ shortDate(L.creation) }}</span>
-									<span class="oa-mailrow-id">{{ L.reference_name }}</span>
+									<span class="oa-mailrow-id">{{ L.letter_no || L.reference_name }}</span>
 								</div>
 								<span v-if="L.status==='Unseen'" class="oa-unseen-dot"></span>
 							</button>
@@ -157,17 +159,22 @@
 						<button @click="goDashboard()" class="oa-crumb-btn">خانه</button>
 						<span class="ico">chevron_left</span>
 						<span class="oa-crumb-current">نامه‌های اتوماسیون</span>
+						<div class="oa-spacer"></div>
+						<div class="oa-inboxsearch">
+							<span class="ico">search</span>
+							<input v-model="search" class="oa-searchinput" placeholder="فیلتر نامه‌ها…" aria-label="فیلتر نامه‌ها" />
+						</div>
 					</div>
 					<div data-r="dtable" class="oa-dtable">
 						<div class="oa-dt-head">
 							<span></span><span>موضوع</span><span>وضعیت</span><span>شماره</span><span>تاریخ</span><span>شناسه</span><span></span>
 						</div>
-						<div v-if="!letters.length" class="oa-pad-empty">نامه‌ای یافت نشد.</div>
-						<button v-for="L in letters" :key="L.name" @click="openLetter(L.name)" class="oa-dtrow h-surface1">
+						<div v-if="!filteredLetters.length" class="oa-pad-empty">نامه‌ای یافت نشد.</div>
+						<button v-for="L in filteredLetters" :key="L.name" @click="openLetter(L.name)" class="oa-dtrow h-surface1">
 							<span></span>
 							<div class="oa-dt-subject">
 								<div class="oa-avatar oa-avatar-34sq" :style="{background:avatarColor(L.sender)}">{{ initials(L.sender) }}</div>
-								<div class="oa-minw0"><div class="oa-dt-subject-title">{{ L.subject }}</div><div class="oa-dt-subject-sender">{{ L.sender }}</div></div>
+								<div class="oa-minw0"><div class="oa-dt-subject-title">{{ L.subject }}</div><div class="oa-dt-subject-sender">{{ L.sender_name || L.sender }}</div></div>
 							</div>
 							<span><span class="oa-chip oa-chip-status" :style="statusChip(L.status)">{{ faStatus(L.status) }}</span></span>
 							<span class="oa-dt-muted">{{ L.letter_no || '—' }}</span>
@@ -216,12 +223,18 @@
 									</a>
 								</div>
 							</div>
+							<div v-if="cur.my_referral && cur.my_referral.on_behalf_of" class="oa-onbehalf">
+								<span class="ico">supervisor_account</span>این مورد را به جانشینی از {{ cur.my_referral.recipient_name || cur.my_referral.on_behalf_of }} مشاهده می‌کنید.
+							</div>
 							<div data-r="actionbar" class="oa-actionbar">
-								<button v-if="cur.status==='Draft' && cur.is_sender" @click="editCur()" class="oa-act-btn oa-act-primary h-primary"><span class="ico">edit</span>ویرایش</button>
-								<button v-if="cur.status!=='Draft'" @click="referCur()" class="oa-act-btn oa-act-primary h-primary"><span class="ico">forward_to_inbox</span>ارجاع</button>
-								<button v-if="cur.status!=='Draft'" @click="decideCur('approve')" class="oa-act-btn oa-act-approve"><span class="ico">check_circle</span>تأیید</button>
-								<button v-if="cur.status!=='Draft'" @click="decideCur('reject')" class="oa-act-btn oa-act-reject"><span class="ico">cancel</span>رد</button>
-								<button v-if="cur.status!=='Draft'" @click="decideCur('return')" class="oa-act-btn oa-act-return"><span class="ico">reply</span>عودت</button>
+								<button v-if="cur.docstatus===0 && cur.is_sender" @click="editCur()" class="oa-act-btn oa-act-primary h-primary"><span class="ico">edit</span>ویرایش</button>
+								<button v-if="cur.docstatus===1" @click="referCur()" class="oa-act-btn oa-act-primary h-primary"><span class="ico">forward_to_inbox</span>ارجاع</button>
+								<template v-if="cur.my_referral">
+									<button @click="decideCur('approve')" class="oa-act-btn oa-act-approve"><span class="ico">check_circle</span>تأیید</button>
+									<button @click="decideCur('reject')" class="oa-act-btn oa-act-reject"><span class="ico">cancel</span>رد</button>
+									<button @click="decideCur('return')" class="oa-act-btn oa-act-return"><span class="ico">reply</span>عودت</button>
+									<button @click="decideCur('done')" class="oa-act-btn oa-act-done"><span class="ico">task_alt</span>اتمام کار</button>
+								</template>
 								<button v-if="cur.can_recall" @click="recallCur()" class="oa-act-btn oa-act-recall"><span class="ico">undo</span>بازپس‌گیری</button>
 								<div class="oa-spacer"></div>
 								<button @click="printLetter(cur.name)" class="oa-printbtn h-surface2" aria-label="چاپ"><span class="ico">print</span></button>
@@ -240,14 +253,20 @@
 										<div class="oa-tl-sender">{{ r.sender_name }}</div>
 										<div class="oa-tl-arrow"><span class="ico">south</span><span class="oa-chip oa-chip-ref-tl" :style="refChip(r.referral_type)">{{ faType(r.referral_type) }}</span></div>
 										<div class="oa-tl-recipient">{{ r.recipient_name }}</div>
+										<div class="oa-tl-tags">
+											<span v-if="r.is_cc" class="oa-tl-tag">رونوشت</span>
+											<span v-if="r.outcome && r.outcome!=='Pending'" class="oa-tl-tag" :style="outcomeChip(r.outcome)">{{ faOutcome(r.outcome) }}</span>
+											<span v-else class="oa-tl-tag">{{ faStatus(r.status) }}</span>
+										</div>
 										<div v-if="r.instruction" class="oa-tl-instruction">«{{ r.instruction }}»</div>
+										<a v-if="r.attachment" :href="r.attachment" target="_blank" rel="noopener" class="oa-tl-attach"><span class="ico">attach_file</span>{{ fileName(r.attachment) }}</a>
 										<div class="oa-tl-meta">
 											<span class="oa-tl-time">{{ shortDate(r.creation) }}</span>
 											<button v-if="r.can_recall" @click="recallRef(r)" title="بازپس‌گیری این ارجاع" class="oa-tl-recall"><span class="ico">undo</span>بازپس‌گیری</button>
 										</div>
 									</div>
 								</div>
-								<button v-if="cur.status!=='Draft'" @click="referCur()" class="oa-tl-add h-surface1"><span class="ico">add</span>ارجاع جدید</button>
+								<button v-if="cur.docstatus===1" @click="referCur()" class="oa-tl-add h-surface1"><span class="ico">add</span>ارجاع جدید</button>
 							</div>
 						</div>
 					</div>
@@ -285,6 +304,7 @@ export default {
 			scope: "inbox",
 			statLabel: "",
 			search: "",
+			searchQuery: "",
 			loading: false,
 			stats: { unseen: 0, pending: 0, overdue: 0, today: 0 },
 			counts: { inbox: {}, outbox: {}, drafts: 0 },
@@ -374,6 +394,7 @@ export default {
 					{ key: "inbox:action", label: "اقدام", icon: "task_alt", scope: "inbox", folder: "action", count: c.inbox?.action },
 					{ key: "inbox:notification", label: "استحضار", icon: "visibility", scope: "inbox", folder: "notification", count: c.inbox?.notification },
 					{ key: "inbox:info", label: "اطلاع", icon: "info", scope: "inbox", folder: "info", count: c.inbox?.info },
+					{ key: "inbox:done", label: "بایگانی", icon: "inventory_2", scope: "inbox", folder: "done" },
 				] },
 				{ title: "کارتابل ارسالی (OUTBOX)", items: [
 					{ key: "outbox:all", label: "همه", icon: "send", scope: "outbox", state: "all", count: c.outbox?.all },
@@ -383,6 +404,7 @@ export default {
 					{ key: "outbox:returned", label: "عودت‌شده‌ها", icon: "reply", scope: "outbox", state: "returned", count: c.outbox?.returned },
 				] },
 				{ title: "سایر", items: [
+					{ key: "search", label: "جستجو", icon: "search", scope: "search" },
 					{ key: "drafts", label: "پیش‌نویس‌ها", icon: "draft", scope: "drafts", count: c.drafts },
 					{ key: "private", label: "خصوصی", icon: "lock", scope: "visibility", visibility: "private" },
 					{ key: "public", label: "عمومی", icon: "public", scope: "visibility", visibility: "public" },
@@ -391,18 +413,27 @@ export default {
 		},
 		folderTitle() {
 			if (this.scope === "stat") return this.statLabel;
+			if (this.scope === "search") return this.searchQuery ? `نتایج جستجو: «${this.searchQuery}»` : "جستجو";
 			for (const g of this.folderGroups) for (const f of g.items) if (f.key === this.folder) return f.label;
 			return "کارتابل";
 		},
 		filteredItems() {
-			const q = this.search.trim().toLowerCase();
-			if (!q) return this.items;
-			return this.items.filter((i) => [i.reference_title, i.subject, i.instruction, i.sender, i.recipient].filter(Boolean).join(" ").toLowerCase().includes(q));
+			// Server-side search results are already filtered (they may match on
+			// body text, which the client never sees) — don't filter them again.
+			if (this.scope === "search") return this.items;
+			return this.filterRows(this.items, ["reference_title", "subject", "instruction", "sender", "recipient", "sender_name", "recipient_name", "letter_no", "reference_name"]);
+		},
+		filteredLetters() {
+			return this.filterRows(this.letters, ["subject", "sender", "sender_name", "letter_no", "name"]);
 		},
 	},
 	mounted() {
 		this.loadDashboard();
-		this._rt = () => { this.loadCounts(); if (this.view === "inbox") this.loadFolder(); };
+		this._rt = () => {
+			this.loadCounts();
+			if (this.view === "inbox") this.loadFolder();
+			else if (this.view === "dashboard") this.loadDashboard();
+		};
 		frappe.realtime.on("oa_inbox_update", this._rt);
 	},
 	beforeUnmount() {
@@ -441,6 +472,39 @@ export default {
 		},
 		faConf(c) {
 			return { Confidential: "محرمانه", Secret: "سری", Normal: "عادی" }[c] || c;
+		},
+		faOutcome(o) {
+			return { Approved: "تأیید شده", Rejected: "رد شده", Returned: "عودت شده", Pending: "در انتظار" }[o] || o || "";
+		},
+		outcomeChip(o) {
+			const m = { Approved: ["rgba(22,163,74,.13)", "#16A34A"], Rejected: ["rgba(220,38,38,.13)", "#DC2626"], Returned: ["rgba(2,132,199,.13)", "#0284C7"] };
+			const [bg, fg] = m[o] || ["var(--surface-2)", "var(--on-variant)"];
+			return { background: bg, color: fg };
+		},
+		rowParty(L) {
+			if (this.scope === "outbox") return "به " + (L.recipient_name || L.recipient || "");
+			return L.sender_name || L.sender || "";
+		},
+		fileName(url) {
+			try { return decodeURIComponent(String(url).split("/").pop()); } catch (e) { return url; }
+		},
+		filterRows(rows, keys) {
+			const q = this.search.trim().toLowerCase();
+			if (!q) return rows;
+			const terms = q.split(/\s+/).filter(Boolean);
+			return rows.filter((r) => {
+				const hay = keys.map((k) => r[k]).filter(Boolean).join(" ").toLowerCase();
+				return terms.every((t) => hay.includes(t));
+			});
+		},
+		runSearch() {
+			const q = this.search.trim();
+			if (q.length < 2) { frappe.show_alert({ message: "حداقل دو حرف برای جستجو وارد کنید.", indicator: "orange" }); return; }
+			this.view = "inbox";
+			this.folder = "search";
+			this._active = { scope: "search", key: "search" };
+			this.searchQuery = q;
+			this.loadFolder();
 		},
 		refChip(t) {
 			const m = {
@@ -487,12 +551,17 @@ export default {
 			frappe.set_route("Form", doctype);
 		},
 		printLetter(name) {
-			window.open(`/printview?doctype=Automation Letter&name=${encodeURIComponent(name)}&format=Automation Letter Thread&no_letterhead=0`, "_blank");
+			const qs = new URLSearchParams({ doctype: "Automation Letter", name, format: "Automation Letter Thread", no_letterhead: "0" });
+			window.open(`/printview?${qs.toString()}`, "_blank");
 		},
 		async loadCounts() {
 			try {
-				this.counts = await frappe.xcall(API + "get_folder_counts");
-				this.stats = await frappe.xcall(API + "get_dashboard_stats");
+				const [counts, stats] = await Promise.all([
+					frappe.xcall(API + "get_folder_counts"),
+					frappe.xcall(API + "get_dashboard_stats"),
+				]);
+				this.counts = counts;
+				this.stats = stats;
 			} catch (e) { /* ignore */ }
 		},
 		async loadDashboard() {
@@ -516,15 +585,22 @@ export default {
 			try {
 				this.letters = await frappe.db.get_list("Automation Letter", {
 					fields: ["name", "subject", "sender", "status", "letter_no", "date"],
-					order_by: "modified desc", limit: 50,
+					filters: [["docstatus", "!=", 2]],
+					order_by: "modified desc", limit: 200,
 				});
 			} catch (e) { this.letters = []; }
 		},
 		selectFolder(f) {
+			if (f.scope === "search") {
+				// The search "folder" runs the query typed in the search box.
+				if (this.search.trim().length >= 2) { this.runSearch(); return; }
+				this.searchQuery = "";
+				this.items = [];
+			}
 			this.folder = f.key;
 			this.scope = f.scope;
 			this._active = f;
-			this.loadFolder();
+			if (f.scope !== "search") this.loadFolder();
 		},
 		async loadFolder() {
 			const f = this._active || { scope: "inbox", folder: "all", key: "inbox:all" };
@@ -536,6 +612,7 @@ export default {
 				else if (f.scope === "outbox") this.items = await frappe.xcall(API + "get_outbox_items", { state: f.state });
 				else if (f.scope === "drafts") this.items = (await frappe.xcall(API + "get_drafts")).map((d) => ({ ...d, reference_name: d.name, reference_title: d.subject, status: "Draft" }));
 				else if (f.scope === "visibility") this.items = (await frappe.xcall(API + "get_letters_by_visibility", { visibility: f.visibility })).map((d) => ({ ...d, reference_name: d.name, reference_title: d.subject }));
+				else if (f.scope === "search") this.items = (await frappe.xcall(API + "search_letters", { query: this.searchQuery })).map((d) => ({ ...d, reference_name: d.name, reference_title: d.subject, status: d.docstatus === 0 ? "Draft" : d.status }));
 			} catch (e) { this.items = []; }
 			finally { this.loading = false; }
 		},
@@ -543,18 +620,18 @@ export default {
 			// Drafts are editable: open the composer in edit mode instead of the
 			// read-only letter view.
 			if (this.scope === "drafts") { this.openEdit(L.reference_name || L.name); return; }
-			if ((this.scope === "inbox" || this.scope === "stat") && L.status === "Unseen") {
-				try { await frappe.xcall(REF + "mark_referral_seen", { referral: L.name }); } catch (e) { /* */ }
-			}
+			// get_letter_detail marks the caller's own open item as seen, so the
+			// letter counts as read no matter where it was opened from.
 			this.openLetter(L.reference_name || L.name);
 		},
 		async openLetter(name) {
 			try {
 				this.cur = await frappe.xcall(LAPI + "get_letter_detail", { name });
 				this.view = "letter";
+				// Opening marks the caller's item as seen server-side: refresh badges.
 				this.loadCounts();
 			} catch (e) {
-				frappe.msgprint("امکان باز کردن نامه نبود.");
+				frappe.msgprint((e && e.message) || "امکان باز کردن نامه نبود.");
 			}
 		},
 		openCompose(letter) {
@@ -588,29 +665,41 @@ export default {
 			else if (this.view === "dashboard") this.loadDashboard();
 		},
 		async decideCur(kind) {
-			// Act on the current user's open referral for this letter.
-			const mine = (this.cur.referrals || []).find((r) => r.recipient === this.meEmail && ["Unseen", "Seen"].includes(r.status));
+			// Act on the caller's open referral for this letter — their own, or one
+			// addressed to someone they currently substitute for (resolved server-side).
+			const mine = this.cur.my_referral;
 			if (!mine) { frappe.msgprint("ارجاع بازی برای شما روی این نامه وجود ندارد."); return; }
 			const CFG = {
 				approve: { method: "approve_referral", title: "تأیید ارجاع", label: "تأیید", done: "تأیید شد", indicator: "green" },
 				reject: { method: "reject_referral", title: "رد ارجاع", label: "رد", done: "رد شد", indicator: "red" },
 				return: { method: "return_referral", title: "عودت ارجاع", label: "عودت", done: "عودت شد", indicator: "blue" },
+				done: { method: "mark_referral_actioned", title: "اتمام کار", label: "اتمام کار", done: "کار به پایان رسید و بایگانی شد", indicator: "green" },
 			}[kind];
+			let busy = false;
 			const d = new frappe.ui.Dialog({
 				title: CFG.title,
 				fields: [{ label: "یادداشت", fieldname: "note", fieldtype: "Small Text" }],
 				primary_action_label: CFG.label,
 				primary_action: async (v) => {
-					await frappe.xcall(REF + CFG.method, { referral: mine.name, note: v.note });
-					d.hide();
-					frappe.show_alert({ message: CFG.done, indicator: CFG.indicator });
-					this.openLetter(this.cur.name);
+					if (busy) return; // guard against a double submit
+					busy = true;
+					try {
+						await frappe.xcall(REF + CFG.method, { referral: mine.name, note: v.note });
+						d.hide();
+						frappe.show_alert({ message: CFG.done, indicator: CFG.indicator });
+						this.loadCounts();
+						this.openLetter(this.cur.name);
+					} catch (e) {
+						busy = false;
+					}
 				},
 			});
 			d.show();
 		},
 		referCur() {
-			const mine = (this.cur.referrals || []).find((r) => r.recipient === this.meEmail && ["Unseen", "Seen"].includes(r.status));
+			// Forward from the caller's own open item so it closes; the server also
+			// resolves this automatically when no parent is passed.
+			const mine = this.cur.my_referral;
 			this.forwardDialog("Automation Letter", this.cur.name, mine ? mine.name : null);
 		},
 		runRecall(confirmMsg, apiMethod, params, successMsg) {

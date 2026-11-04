@@ -99,18 +99,47 @@ def document_referral_query_conditions(user: str | None = None) -> str:
 	)"""
 
 
+def public_letters_visible() -> bool:
+	"""Whether non-private, normal-confidentiality registered letters are open
+	to every Office Automation user (Office Automation Settings toggle)."""
+	try:
+		from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
+			get_settings,
+		)
+
+		return bool(get_settings().get("public_letters_visible"))
+	except Exception:
+		return False
+
+
+def is_public_letter(doc) -> bool:
+	return bool(
+		doc.get("docstatus") == 1
+		and not doc.get("is_private")
+		and (doc.get("confidentiality") or "Normal") == "Normal"
+	)
+
+
 def automation_letter_query_conditions(user: str | None = None) -> str:
 	user = user or frappe.session.user
 	if is_privileged(user):
 		return ""
 
 	users = _quoted_user_list(get_effective_users(user))
+	public = ""
+	if public_letters_visible():
+		public = """
+		or (
+			`tabAutomation Letter`.docstatus = 1
+			and ifnull(`tabAutomation Letter`.is_private, 0) = 0
+			and ifnull(`tabAutomation Letter`.confidentiality, 'Normal') = 'Normal'
+		)"""
 	# A letter is visible when the effective user authored it, or appears on any
 	# referral of it (as sender or recipient). EXISTS short-circuits and rides
 	# the index on (reference_doctype, reference_name).
 	return f"""(
 		`tabAutomation Letter`.sender in ({users})
-		or `tabAutomation Letter`.owner in ({users})
+		or `tabAutomation Letter`.owner in ({users}){public}
 		or exists (
 			select 1 from `tabDocument Referral` dr
 			where dr.reference_doctype = 'Automation Letter'
@@ -151,23 +180,19 @@ def has_permission(doc, ptype: str | None = None, user: str | None = None, **kwa
 	if doc.doctype == "Automation Letter":
 		if {doc.get("sender"), doc.owner} & effective:
 			return True
+		# Public letters are readable (only readable) by everyone when enabled.
+		if ptype in (None, "read", "print") and public_letters_visible() and is_public_letter(doc):
+			return True
 		# Visible if the effective user is on any referral of this letter.
+		users = list(effective)
 		return bool(
-			frappe.db.exists(
+			frappe.get_all(
 				"Document Referral",
-				{
-					"reference_doctype": "Automation Letter",
-					"reference_name": doc.name,
-					"recipient": ["in", list(effective)],
-				},
-			)
-			or frappe.db.exists(
-				"Document Referral",
-				{
-					"reference_doctype": "Automation Letter",
-					"reference_name": doc.name,
-					"sender": ["in", list(effective)],
-				},
+				filters={"reference_doctype": "Automation Letter", "reference_name": doc.name},
+				or_filters={"recipient": ["in", users], "sender": ["in", users]},
+				limit=1,
+				pluck="name",
+				ignore_permissions=True,
 			)
 		)
 

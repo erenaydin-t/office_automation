@@ -113,18 +113,17 @@ export default {
 			try {
 				// Document Referral carries a single attachment; use the first file.
 				const attachment = (this.attachments[0] && this.attachments[0].file_url) || null;
-				// Fan out one referral per selected recipient, under the same parent.
-				for (const r of this.recipients) {
-					await frappe.xcall(REF + "forward_document", {
-						doc_type: this.doctype,
-						doc_name: this.docName,
-						recipient: r.value,
-						referral_type: this.referralType,
-						instruction: this.instruction,
-						attachment,
-						parent_referral: this.parent,
-					});
-				}
+				// One atomic call: every recipient gets a referral under the same
+				// parent, or (on any error) none do — no half-delivered fan-out.
+				await frappe.xcall(REF + "forward_to_many", {
+					doc_type: this.doctype,
+					doc_name: this.docName,
+					recipients: JSON.stringify(this.recipients.map((r) => r.value)),
+					referral_type: this.referralType,
+					instruction: this.instruction,
+					attachment,
+					parent_referral: this.parent,
+				});
 				frappe.show_alert({ message: __("ارجاع شد"), indicator: "green" });
 				this.$emit("done");
 			} catch (e) {

@@ -292,7 +292,9 @@ export default {
 				const res = await frappe.xcall(LETTER_API + (this.isEdit ? "update_letter" : "create_letter"), args);
 				frappe.show_alert({
 					message: submit
-						? __("نامه ثبت و ارسال شد")
+						? res.letter_no
+							? __("نامه با شمارهٔ {0} ثبت و ارسال شد", [res.letter_no])
+							: __("نامه ثبت و ارسال شد")
 						: this.isEdit
 							? __("پیش‌نویس به‌روزرسانی شد")
 							: __("پیش‌نویس ذخیره شد"),

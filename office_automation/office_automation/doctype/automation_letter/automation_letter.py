@@ -4,6 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import getdate, today
 
 
 class AutomationLetter(Document):
@@ -74,16 +75,46 @@ class AutomationLetter(Document):
 
 	def before_submit(self):
 		# When the letter is registered in the دبیرخانه it becomes immutable
-		# and ready to be referred (Erja).
+		# and ready to be referred (Erja). It also receives its secretariat
+		# number (شماره نامه) unless one was entered manually.
 		self.status = "Registered"
+		if not self.letter_no:
+			self.letter_no = make_letter_number(self.date)
 
 	def on_submit(self):
 		# Submitting registers the letter AND sends it to every recipient (and CC),
 		# creating a root Document Referral (Cartable item) for each.
 		self.send_to_recipients()
 
-	def on_cancel(self):
+	def before_cancel(self):
+		# Must be set *before* the cancel is written: anything assigned in
+		# on_cancel runs after the DB update and would silently be lost.
 		self.status = "Cancelled"
+
+	def on_cancel(self):
+		self.close_open_referrals()
+
+	def close_open_referrals(self):
+		"""A cancelled letter needs no further action: clear it from every
+		recipient's Cartable by closing the still-open referrals."""
+		from office_automation.office_automation.doctype.document_referral.document_referral import (
+			OPEN_STATUSES,
+			_publish_inbox_update,
+		)
+
+		open_refs = frappe.get_all(
+			"Document Referral",
+			filters={
+				"reference_doctype": self.doctype,
+				"reference_name": self.name,
+				"status": ["in", OPEN_STATUSES],
+			},
+			pluck="name",
+		)
+		for name in open_refs:
+			ref = frappe.get_doc("Document Referral", name)
+			ref.mark_actioned()
+			_publish_inbox_update(ref.recipient, {"referral": name, "cancelled": True})
 
 	def send_to_recipients(self):
 		"""Create a root referral for each To recipient and each CC recipient.
@@ -117,3 +148,54 @@ class AutomationLetter(Document):
 				referral_type="Info",
 				is_cc=True,
 			)
+
+
+# --------------------------------------------------------------------------- #
+# Secretariat numbering (شماره نامه)
+# --------------------------------------------------------------------------- #
+def gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
+	"""Convert a Gregorian date to Jalali (Solar Hijri). Pure arithmetic — no
+	dependency on the optional persian_calendar app."""
+	g_d_m = (0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
+	gy2 = gy + 1 if gm > 2 else gy
+	days = 355666 + 365 * gy + (gy2 + 3) // 4 - (gy2 + 99) // 100 + (gy2 + 399) // 400 + gd + g_d_m[gm - 1]
+	jy = -1595 + 33 * (days // 12053)
+	days %= 12053
+	jy += 4 * (days // 1461)
+	days %= 1461
+	if days > 365:
+		jy += (days - 1) // 365
+		days = (days - 1) % 365
+	if days < 186:
+		jm, jd = 1 + days // 31, 1 + days % 31
+	else:
+		jm, jd = 7 + (days - 186) // 30, 1 + (days - 186) % 30
+	return jy, jm, jd
+
+
+def make_letter_number(date=None) -> str | None:
+	"""Next secretariat number, e.g. ``1405/00012`` (optionally prefixed).
+
+	The counter restarts every Jalali year and is kept in Frappe's ``Series``
+	table, so concurrent registrations never collide. Disabled (returns None)
+	when *Auto Letter Number* is off in Office Automation Settings.
+	"""
+	from frappe.model.naming import getseries
+
+	from office_automation.office_automation.doctype.office_automation_settings.office_automation_settings import (
+		get_settings,
+	)
+
+	settings = get_settings()
+	if not settings.get("auto_letter_number"):
+		return None
+	d = getdate(date or today())
+	jy = gregorian_to_jalali(d.year, d.month, d.day)[0]
+	prefix = (settings.get("letter_number_prefix") or "").strip()
+	key = f"OA-LETTER-NO-{prefix}-{jy}"
+	for _attempt in range(5):
+		number = f"{prefix}{jy}/{getseries(key, 5)}"
+		# Skip numbers already taken manually (letter_no is unique).
+		if not frappe.db.exists("Automation Letter", {"letter_no": number}):
+			return number
+	return None

@@ -44,7 +44,9 @@ window.office_automation_inject_template_style = function () {
 frappe.ui.form.on("Automation Letter", {
 	refresh(frm) {
 		office_automation_inject_template_style();
-		if (frm.page && frm.page.wrapper) frm.page.wrapper.classList.add("oa-form");
+		// frm.page.wrapper is a jQuery object (no .classList): use $() so this
+		// never throws and aborts the rest of refresh (custom buttons).
+		if (frm.page && frm.page.wrapper) $(frm.page.wrapper).addClass("oa-form");
 
 		if (frm.doc.docstatus === 0) {
 			// Draft: help the user send the letter to employees on submit.
@@ -179,7 +181,9 @@ function office_automation_forward_dialog(frm) {
 				fieldname: "parent_referral",
 				fieldtype: "Link",
 				options: "Document Referral",
-				description: __("Leave blank to refer directly from the letter."),
+				description: __(
+					"Leave blank: your own open referral on this letter (if any) is used and closed automatically."
+				),
 			},
 		],
 		primary_action_label: __("Forward"),
@@ -236,9 +240,15 @@ function office_automation_render_tree(nodes, depth = 0) {
 	let html = `<ul style="list-style:none;padding-left:${depth ? 20 : 0}px">`;
 	for (const node of nodes) {
 		html += `<li style="margin:6px 0">
-			<b>${frappe.utils.escape_html(node.sender || "")}</b>
-			→ <b>${frappe.utils.escape_html(node.recipient || "")}</b>
-			<span class="indicator-pill ${office_automation_status_color(node.status)}">${frappe.utils.escape_html(node.status || "")}</span>
+			<b>${frappe.utils.escape_html(node.sender_name || node.sender || "")}</b>
+			→ <b>${frappe.utils.escape_html(node.recipient_name || node.recipient || "")}</b>
+			<span class="indicator-pill ${office_automation_status_color(node.status)}">${frappe.utils.escape_html(__(node.status || ""))}</span>
+			${
+				node.outcome && node.outcome !== "Pending"
+					? `<span class="indicator-pill ${office_automation_outcome_color(node.outcome)}">${frappe.utils.escape_html(__(node.outcome))}</span>`
+					: ""
+			}
+			${node.is_cc ? `<span class="indicator-pill gray">${__("CC")}</span>` : ""}
 			<div class="text-muted small">${frappe.utils.escape_html(node.instruction || "")}</div>
 			${office_automation_render_tree(node.children, depth + 1)}
 		</li>`;
@@ -256,4 +266,8 @@ function office_automation_status_color(status) {
 			Actioned: "green",
 		}[status] || "gray"
 	);
+}
+
+function office_automation_outcome_color(outcome) {
+	return { Approved: "green", Rejected: "red", Returned: "blue" }[outcome] || "gray";
 }

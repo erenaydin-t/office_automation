@@ -14,15 +14,25 @@ class OfficeAutomationSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		auto_letter_number: DF.Check
 		create_todo: DF.Check
 		default_letter_type: DF.Link | None
+		letter_number_prefix: DF.Data | None
 		notify_on_overdue: DF.Check
 		overdue_after_days: DF.Int
+		public_letters_visible: DF.Check
 		realtime_update: DF.Check
 		send_email_notification: DF.Check
 	# end: auto-generated types
 
-	pass
+	def validate(self):
+		if (self.overdue_after_days or 0) < 0:
+			self.overdue_after_days = 0
+
+	def on_update(self):
+		# Visibility rules are evaluated inside permission hooks; make sure no
+		# stale cached copy of the singleton keeps the old behaviour.
+		frappe.clear_document_cache(self.doctype, self.doctype)
 
 
 def get_settings() -> "OfficeAutomationSettings":

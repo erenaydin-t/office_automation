@@ -109,3 +109,20 @@ Open,بازکردن
 Mark Actioned,اتمام کار
 Instruction / Note (هامش‌نویسی),دستور/یادداشت
 Leave blank to refer directly from the letter.,برای ارجاع مستقیم از نامه، خالی بگذارید.
+New referral from {0}: {1},ارجاع جدید از {0}: {1}
+Referral {0} by {1}: {2},ارجاع {0} توسط {1}: {2}
+Overdue referral awaiting your action: {0},ارجاع معوق در انتظار اقدام شما: {0}
+At least one recipient is required.,انتخاب حداقل یک گیرنده الزامی است.
+You can only forward from a referral addressed to you.,فقط از ارجاعی که به شما رسیده است می‌توانید ارجاع دهید.
+This referral has already been actioned.,برای این ارجاع قبلاً اقدام شده است.
+Invalid outcome {0}.,نتیجهٔ نامعتبر: {0}
+You can only update your own inbox items.,فقط موارد کارتابل خودتان را می‌توانید تغییر دهید.
+Only the recipient (or their delegate) can action this referral.,فقط گیرنده (یا جانشین او) می‌تواند روی این ارجاع اقدام کند.
+Sender and Recipient cannot be the same user.,فرستنده و گیرنده نمی‌توانند یک نفر باشند.
+Recipient {0} is not an active user.,گیرندهٔ {0} کاربر فعال نیست.
+Auto Letter Number (شماره‌گذاری خودکار),شماره‌گذاری خودکار نامه
+Letter Number Prefix,پیشوند شمارهٔ نامه
+Public Letters Visible To All Users,نمایش نامه‌های عمومی برای همهٔ کاربران
+Visibility (عمومی / خصوصی),نمایش (عمومی / خصوصی)
+Returned,عودت شده
+Leave blank: your own open referral on this letter (if any) is used and closed automatically.,خالی بگذارید: ارجاع باز خودتان روی این نامه (در صورت وجود) خودکار استفاده و بسته می‌شود.

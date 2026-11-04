@@ -32,9 +32,24 @@ class DelegationRule(Document):
 		self._check_overlap()
 
 	def on_change(self):
-		# Permission decisions are cached per-request; clear so changes take
-		# effect immediately for the affected delegatee.
-		frappe.cache().delete_value(_delegators_cache_key(self.delegatee))
+		# Permission decisions are cached; clear so changes take effect
+		# immediately for the affected delegatee (and a previous delegatee, if
+		# the rule was re-assigned to someone else).
+		self._clear_delegation_cache()
+
+	def on_trash(self):
+		# Deleting a rule must revoke the substitute's access right away, not
+		# after the cache TTL expires.
+		self._clear_delegation_cache()
+
+	def _clear_delegation_cache(self):
+		users = {self.delegatee}
+		before = self.get_doc_before_save()
+		if before and before.delegatee:
+			users.add(before.delegatee)
+		for user in users:
+			if user:
+				frappe.cache().delete_value(_delegators_cache_key(user))
 
 	def _check_overlap(self):
 		overlap = frappe.db.sql(
